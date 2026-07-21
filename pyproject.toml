@@ -51,7 +51,7 @@ where = ["python"]
 include = ["actenon_protocol*"]
 
 [tool.setuptools.package-data]
-"actenon_protocol" = ["py.typed"]
+"actenon_protocol" = ["py.typed", "data/*.yaml", "data/*.json"]
 "actenon_protocol.types" = ["py.typed"]
 
 [tool.pytest.ini_options]

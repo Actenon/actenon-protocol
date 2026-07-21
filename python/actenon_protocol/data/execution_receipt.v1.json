@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:execution-receipt:v1",
+  "title": "ExecutionReceipt",
+  "description": "The durable record that an ExecutionProof was verified and an action was executed (or refused) at a protected resource. Protocol version 1.0.0.",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "receipt_id",
+    "proof_id",
+    "execution_attempt_id",
+    "execution_mode",
+    "executed_at",
+    "outcome",
+    "target",
+    "action"
+  ],
+  "properties": {
+    "protocol_version": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/protocol_version"
+    },
+    "receipt_id": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier",
+      "description": "The unique identifier of this receipt. MUST use the 'rcpt_' prefix."
+    },
+    "proof_id": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier",
+      "description": "The identifier of the ExecutionProof that authorised this execution."
+    },
+    "execution_attempt_id": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier",
+      "description": "The identifier of this execution attempt. MUST use the 'exec_' prefix. Distinct from proof_id (which is the authority). Used for idempotency."
+    },
+    "execution_mode": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/execution_mode",
+      "description": "The execution mode under which the action was executed. MUST match the proof's execution_mode."
+    },
+    "executed_at": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["EXECUTED", "REFUSED", "PARTIAL", "UNKNOWN"],
+      "description": "The execution outcome. 'EXECUTED' = the action completed successfully. 'REFUSED' = the action was refused (see refusal_id). 'PARTIAL' = the action partially completed (provider returned partial success). 'UNKNOWN' = the outcome could not be determined (provider timeout, network failure)."
+    },
+    "target": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/target_ref",
+      "description": "The target resource that executed the action. MUST match the proof's target."
+    },
+    "action": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/action_spec",
+      "description": "The action that was executed. MUST match the proof's action."
+    },
+    "provider_response_summary": {
+      "type": "object",
+      "description": "Optional. A summary of the provider's response. MUST NOT contain sensitive data (credentials, PII). Used for audit.",
+      "additionalProperties": true
+    },
+    "refusal_id": {
+      "oneOf": [
+        {"$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier"},
+        {"type": "null"}
+      ],
+      "description": "Present if outcome is 'REFUSED'. The identifier of the ExecutionRefusal. MUST use the 'rful_' prefix."
+    },
+    "evidence_links": {
+      "type": "array",
+      "items": {"$ref": "urn:actenon:protocol:evidence-link:v1"},
+      "description": "Optional. Evidence links (transparency log entries, receipt chain entries, counter-signatures) associated with this receipt."
+    },
+    "resource_signature": {
+      "oneOf": [
+        {"$ref": "urn:actenon:protocol:_common:v1#/$defs/signature"},
+        {"type": "null"}
+      ],
+      "description": "Optional. The protected resource's signature over the canonicalised receipt payload. Required for tamper-evident receipt chains."
+    }
+  },
+  "additionalProperties": false
+}

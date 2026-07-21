@@ -11,20 +11,32 @@ Loads the canonical catalogue from refusals/catalogue.v1.yaml and provides:
 from __future__ import annotations
 
 from enum import StrEnum
+from importlib import resources
 from pathlib import Path
 from typing import Final
 
 import yaml
 
-# Path to the canonical catalogue YAML, relative to this file.
-_CATALOGUE_PATH: Final[Path] = (
-    Path(__file__).resolve().parent.parent.parent / "refusals" / "catalogue.v1.yaml"
-)
-
 
 def _load_catalogue() -> dict:
-    """Load the catalogue YAML. Cached at module level."""
-    with _CATALOGUE_PATH.open("r", encoding="utf-8") as f:
+    """Load the catalogue YAML.
+
+    Uses importlib.resources so the file is found both in the source tree
+    (dev installs) and in installed wheels (where the YAML is vendored
+    under actenon_protocol/data/).
+    """
+    # Try the packaged data directory first (works for installed wheels and
+    # editable installs where the data dir is present).
+    try:
+        with resources.files("actenon_protocol.data").joinpath("catalogue.v1.yaml").open("r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    except (FileNotFoundError, ModuleNotFoundError, AttributeError):
+        pass
+    # Fallback: resolve relative to the source repo (dev checkout without
+    # the data dir copied in).
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    catalogue_path = repo_root / "refusals" / "catalogue.v1.yaml"
+    with catalogue_path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 

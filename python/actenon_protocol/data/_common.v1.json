@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:_common:v1",
+  "title": "Actenon Protocol — Common Definitions",
+  "description": "Shared type definitions used across all Actenon protocol schemas. Protocol version 1.0.0.",
+  "type": "object",
+  "$defs": {
+    "protocol_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$",
+      "description": "Protocol version, MAJOR.MINOR.PATCH. Major must be 1 for this schema version. See VERSIONING.md."
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*_[0-9a-f]{16,}$",
+      "description": "An Actenon protocol identifier. Format: <prefix><hex_chars>. Prefix is one of: intent_, authz_, grant_, proof_, exec_, rcpt_, rful_. Hex chars are lowercase, minimum 16, recommended 32. See identifiers/prefixes.v1.yaml.",
+      "examples": [
+        "proof_a1b2c3d4e5f6071829384756abcdef01",
+        "grant_9f3c1a175e9b4d80",
+        "intent_abcdef0123456789"
+      ]
+    },
+    "iso8601_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "An ISO 8601 timestamp with timezone. UTC recommended (Z suffix)."
+    },
+    "audience_ref": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of audience. Examples: 'service', 'resource', 'tenant'."
+        },
+        "id": {
+          "type": "string",
+          "description": "The audience identifier. Examples: 'actenon-cloud-gateway', 'payment-provider-stripe'."
+        }
+      },
+      "additionalProperties": false
+    },
+    "target_ref": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The target resource type. Examples: 'payment-provider', 'database', 'file-system', 'iam-plane'."
+        },
+        "id": {
+          "type": "string",
+          "description": "The target resource identifier. Examples: 'stripe', 'postgres-primary', '/var/data'."
+        }
+      },
+      "additionalProperties": false
+    },
+    "action_spec": {
+      "type": "object",
+      "required": ["type", "parameters"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The action type. Examples: 'payment.refund', 'file.delete', 'iam.grant_role', 'message.send'."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "The action parameters. MUST be JSON-serialisable under ACTENON-JCS-STRICT-1 (no floats).",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "action_hash": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "description": "The hash algorithm. Default: 'sha256'.",
+          "default": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The hex-encoded hash value (lowercase)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "signature": {
+      "type": "object",
+      "required": ["algorithm", "key_id", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "description": "The signature algorithm. Examples: 'EdDSA', 'ES256', 'HS256'.",
+          "examples": ["EdDSA", "ES256"]
+        },
+        "key_id": {
+          "type": "string",
+          "description": "The identifier of the signing key. For Ed25519 keys managed by actenon-permit, format: 'ed25519-<12hex>'."
+        },
+        "value": {
+          "type": "string",
+          "description": "The base64url-encoded signature value (no padding)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": ["brokered", "resource_owned"],
+      "description": "The execution mode. 'brokered' = the deployment obtains a scoped provider credential, verifies the proof, and invokes the provider. 'resource_owned' = the protected resource independently verifies the proof and decides whether to execute. See protocol/03-execution-modes.md."
+    },
+    "evidence_link_type": {
+      "type": "string",
+      "enum": [
+        "transparency_log",
+        "receipt_chain",
+        "audit_ledger",
+        "external_attestation",
+        "counter_signature"
+      ],
+      "description": "The type of evidence link. See protocol/10-evidence-linkage.md."
+    }
+  }
+}

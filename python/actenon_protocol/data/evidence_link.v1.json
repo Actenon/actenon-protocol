@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:evidence-link:v1",
+  "title": "EvidenceLink",
+  "description": "A reference to an external evidence record (transparency log entry, receipt chain entry, counter-signature, etc.) that is associated with a proof, receipt, or refusal. Protocol version 1.0.0.",
+  "type": "object",
+  "required": ["type", "link_type", "target_ref"],
+  "properties": {
+    "type": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/evidence_link_type",
+      "description": "The type of evidence. See protocol/10-evidence-linkage.md."
+    },
+    "link_type": {
+      "type": "string",
+      "enum": ["inline", "external_url", "content_hash"],
+      "description": "How the evidence is referenced. 'inline' = the evidence is embedded in the artefact. 'external_url' = the evidence is at the given URL. 'content_hash' = only the hash of the evidence is recorded."
+    },
+    "target_ref": {
+      "type": "object",
+      "description": "The reference to the evidence. Shape depends on link_type.",
+      "properties": {
+        "url": {"type": "string", "format": "uri", "description": "Required when link_type is 'external_url'."},
+        "hash": {
+          "type": "object",
+          "description": "Required when link_type is 'content_hash'. Optional for 'external_url' (integrity check).",
+          "$ref": "urn:actenon:protocol:_common:v1#/$defs/action_hash"
+        },
+        "inline_payload": {
+          "type": "object",
+          "description": "Required when link_type is 'inline'. The evidence payload itself."
+        }
+      },
+      "additionalProperties": false
+    },
+    "issued_at": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"
+    },
+    "issuer_id": {
+      "type": "string",
+      "description": "The identifier of the evidence issuer (e.g. the transparency log operator)."
+    }
+  },
+  "additionalProperties": false
+}

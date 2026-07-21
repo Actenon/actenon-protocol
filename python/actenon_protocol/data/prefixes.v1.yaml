@@ -1,0 +1,152 @@
+# Identifier prefixes — v1 registry
+
+# This file is the canonical machine-readable registry of identifier prefixes
+# used in the Actenon protocol. It is the source of truth for the
+# protocol/01-identifiers.md specification.
+#
+# Version: 1
+# Status: stable for protocol v1.x
+# Stability: prefixes CANNOT be removed or redefined within protocol v1.x.
+#            New prefixes MAY be added in minor versions.
+
+registry_version: "1"
+protocol_version: "^1"
+
+# Format: <prefix><hex_chars>
+# - prefix is the literal string above
+# - hex_chars is a non-empty lowercase-hexadecimal string
+# - the recommended length is 32 hex chars (128 bits, UUID4 hex)
+# - the minimum length is 16 hex chars (preserves compatibility with
+#   existing actenon-permit identifiers)
+# - alphabetic case: prefix is lowercase; hex chars MUST be lowercase
+#
+# Implementations MUST accept any length >= 16 hex chars.
+# Implementations SHOULD emit 32 hex chars for new identifiers.
+# Implementations MAY preserve shorter existing identifiers for backward
+# compatibility.
+
+# Regex: ^[a-z][a-z0-9_]*_[0-9a-f]{16,}$
+
+prefixes:
+  - prefix: "intent_"
+    artefact: "AuthorisedExecutionIntent"
+    description: |
+      The developer-facing claim that an agent wants to perform an action.
+      This is NOT the boundary artefact (that is ExecutionProof).
+      The intent is what the proof is bound to.
+    min_hex_length: 16
+    recommended_hex_length: 32
+    compatibility: |
+      Preserves the existing actenon-kernel `intent_id` convention.
+      The actenon-permit `act_<16hex>` (action_id) is an ALIAS for `intent_`
+      within this protocol — see `aliases` below.
+
+  - prefix: "authz_"
+    artefact: "AuthorityDecision"
+    description: |
+      A decision record produced by the authority broker (e.g. actenon-permit
+      PDP) that authorised the issuance of an ExecutionProof for a specific
+      intent. This is an audit artefact, not a boundary artefact.
+    min_hex_length: 16
+    recommended_hex_length: 32
+    compatibility: "New in v1.0. No prior implementation uses this prefix."
+
+  - prefix: "grant_"
+    artefact: "Grant"
+    description: |
+      A bounded, expiring, revocable authority issued by the authority broker
+      to an agent. Owned by actenon-permit (or compatible). Referenced by
+      the proof's `issuer` claim as the authority under which the proof was
+      minted.
+    min_hex_length: 16
+    recommended_hex_length: 32
+    compatibility: |
+      Preserves the existing actenon-permit `grant_<16hex>` format.
+      Existing grant identifiers continue to validate.
+
+  - prefix: "proof_"
+    artefact: "ExecutionProof"
+    description: |
+      The cryptographic boundary artefact. Authorises ONE exact
+      (action, target, parameters) tuple under the resource owner's
+      configured trust policy. Verified by the resource's Kernel deployment
+      or compatible verifier.
+    min_hex_length: 16
+    recommended_hex_length: 32
+    compatibility: |
+      New canonical prefix. The actenon-kernel internally uses `pccb_id`;
+      on the wire, the canonical prefix is `proof_`.
+      The kernel's `pccb_id` is implementation-specific and does NOT appear
+      in protocol artefacts.
+
+  - prefix: "exec_"
+    artefact: "ExecutionAttempt"
+    description: |
+      A single attempt to execute an action under a proof. Distinct from
+      `proof_` (which is the authority) and from `intent_` (which is the
+      claim). Used for idempotency: the same `exec_` identifier retried
+      with the same proof returns the prior outcome (if the resource
+      supports idempotent retry). A different `exec_` identifier with the
+      same proof is a replay and is refused with `REPLAY_DETECTED`.
+    min_hex_length: 16
+    recommended_hex_length: 32
+    compatibility: |
+      New in v1.0. Separates replay protection (keyed by `proof_`) from
+      idempotent delivery (keyed by `exec_`), addressing audit finding K-04.
+
+  - prefix: "rcpt_"
+    artefact: "ExecutionReceipt"
+    description: |
+      The durable record that a proof was verified and an action was
+      executed (or refused). Issued by the protected resource. May be
+      counter-signed by a transparency log or receipt chain.
+    min_hex_length: 16
+    recommended_hex_length: 32
+    compatibility: "New canonical prefix."
+
+  - prefix: "rful_"
+    artefact: "ExecutionRefusal"
+    description: |
+      The durable record that a proof was rejected or an action was refused.
+      Issued by the protected resource or the verifier. Includes the
+      `disclosed_code` (public-safe) and optionally the `internal_code`
+      (trusted-only).
+    min_hex_length: 16
+    recommended_hex_length: 32
+    compatibility: "New canonical prefix."
+
+# Aliases: identifiers that use a different prefix but refer to the same
+# artefact concept. Consumers MUST accept these as equivalent.
+aliases:
+  - canonical_prefix: "intent_"
+    alias_prefix: "act_"
+    rationale: |
+      actenon-permit uses `act_<16hex>` for `Action.action_id`, which is
+      passed as the kernel's `intent_id` (audit finding P-09 / D-06).
+      For the protocol, `intent_` is canonical; `act_` is accepted as
+      an alias for backward compatibility with existing permit deployments.
+    deprecated_since: "1.0.0"
+    removal_target: "2.0.0"
+
+  - canonical_prefix: "proof_"
+    alias_prefix: "pccb_"
+    rationale: |
+      actenon-kernel uses `pccb_id` internally. No known implementation
+      emits `pccb_` on the wire; the alias is registered defensively.
+      The kernel's `pccb_id` field remains implementation-specific.
+    deprecated_since: "1.0.0"
+    removal_target: "2.0.0"
+
+# Forbidden prefixes — must NOT be used; reserved or rejected.
+forbidden:
+  - prefix: "tenant_"
+    reason: "Tenant modelling is out of scope for the protocol (owned by Cloud)."
+
+  - prefix: "user_"
+    reason: "User/subject identity is out of scope (owned by the identity provider)."
+
+  - prefix: "policy_"
+    reason: "Policy evaluation is out of scope (owned by the authority broker)."
+
+  - prefix: "approval_"
+    reason: "Approvals are out of scope (owned by the authority broker)."
