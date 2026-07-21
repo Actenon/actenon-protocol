@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from actenon_protocol._compat import StrEnum
 
 
 class ExecutionMode(StrEnum):

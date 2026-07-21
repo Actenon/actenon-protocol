@@ -10,7 +10,7 @@ Loads the canonical catalogue from refusals/catalogue.v1.yaml and provides:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from actenon_protocol._compat import StrEnum
 from importlib import resources
 from pathlib import Path
 from typing import Final
