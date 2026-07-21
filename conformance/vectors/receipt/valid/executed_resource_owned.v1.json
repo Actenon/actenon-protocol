@@ -1,0 +1,24 @@
+{
+  "name": "executed_resource_owned",
+  "description": "A valid ExecutionReceipt in resource_owned mode with outcome EXECUTED. Note execution_mode is explicit and matches the proof.",
+  "artefact": {
+    "protocol_version": "1.0.0",
+    "receipt_id": "rcpt_b1b2c3d4e5f6071829384756abcdef02",
+    "proof_id": "proof_b1b2c3d4e5f6071829384756abcdef03",
+    "execution_attempt_id": "exec_b1b2c3d4e5f6071829384756abcdef04",
+    "execution_mode": "resource_owned",
+    "executed_at": "2026-07-21T12:00:10Z",
+    "outcome": "EXECUTED",
+    "target": { "type": "payment-provider", "id": "stripe" },
+    "action": {
+      "type": "payment.refund",
+      "parameters": { "invoice_id": "inv_abc123", "amount_cents": 2500, "currency": "GBP" }
+    },
+    "resource_signature": {
+      "algorithm": "EdDSA",
+      "key_id": "ed25519-stripe-001",
+      "value": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+    }
+  },
+  "expected_validation": "valid"
+}

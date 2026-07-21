@@ -1,0 +1,7 @@
+{
+  "name": "float_deep_nested",
+  "description": "A float deep in a nested structure. MUST be rejected with CanonicalisationError.",
+  "input": { "outer": { "inner": { "value": 0.1 } } },
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "empty_collections",
+  "description": "Empty object and array. Verifies correct handling of edge cases.",
+  "input": { "empty_obj": {}, "empty_arr": [] },
+  "expected_canonical": "{\"empty_arr\":[],\"empty_obj\":{}}"
+}

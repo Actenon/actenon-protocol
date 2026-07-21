@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "actenon-protocol"
+version = "1.0.0"
+description = "Neutral, open, implementation-independent boundary contract for the Actenon ecosystem."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Actenon Ltd" }]
+keywords = ["security", "authorization", "proof", "execution", "boundary", "protocol"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+  "pydantic>=2.5,<3",
+  "jsonschema>=4.23,<5",
+  "rfc8785>=0.1.4,<1",
+  "pyyaml>=6.0,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.8",
+  "build>=1.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/Actenon/actenon-protocol"
+Repository = "https://github.com/Actenon/actenon-protocol"
+Issues = "https://github.com/Actenon/actenon-protocol/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["python"]
+include = ["actenon_protocol*"]
+
+[tool.setuptools.package-data]
+"actenon_protocol" = ["py.typed"]
+"actenon_protocol.types" = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["conformance/python"]
+addopts = "-v --tb=short"
+pythonpath = ["python"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = [
+  "E501",  # line length handled by formatter
+]

@@ -1,0 +1,18 @@
+{
+  "name": "public_proof_invalid",
+  "description": "ExecutionRefusal under public disclosure policy. internal_code is null; disclosed_code is the umbrella PROOF_INVALID.",
+  "artefact": {
+    "protocol_version": "1.0.0",
+    "refusal_id": "rful_a1b2c3d4e5f6071829384756abcdef01",
+    "proof_id": "proof_a1b2c3d4e5f6071829384756abcdef02",
+    "execution_attempt_id": "exec_a1b2c3d4e5f6071829384756abcdef03",
+    "execution_mode": "brokered",
+    "refused_at": "2026-07-21T12:00:05Z",
+    "disclosed_code": "PROOF_INVALID",
+    "internal_code": null,
+    "message": "proof verification failed",
+    "retryable": false
+  },
+  "expected_validation": "valid",
+  "disclosure_policy": "public"
+}

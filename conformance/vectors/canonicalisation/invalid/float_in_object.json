@@ -1,0 +1,7 @@
+{
+  "name": "float_in_object",
+  "description": "A float nested in an object. MUST be rejected with CanonicalisationError.",
+  "input": { "amount": 19.99 },
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE"
+}

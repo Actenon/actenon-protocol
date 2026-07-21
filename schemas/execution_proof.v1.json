@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:execution-proof:v1",
+  "title": "ExecutionProof",
+  "description": "The cryptographic boundary artefact verified by the protected resource. Authorises ONE exact (action, target, parameters) tuple under the resource owner's configured trust policy. Protocol version 1.0.0.",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "proof_id",
+    "issuer",
+    "subject",
+    "audience",
+    "action",
+    "target",
+    "issued_at",
+    "expires_at",
+    "canonicalisation",
+    "action_hash",
+    "signature",
+    "execution_mode"
+  ],
+  "properties": {
+    "protocol_version": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/protocol_version"
+    },
+    "proof_id": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier",
+      "description": "The unique identifier of this proof. MUST use the 'proof_' prefix."
+    },
+    "issuer": {
+      "$ref": "urn:actenon:protocol:issuer-metadata:v1",
+      "description": "The issuer of this proof (the authority broker or its delegated signer)."
+    },
+    "subject": {
+      "type": "string",
+      "description": "The principal (agent, user, or service) on whose behalf the proof was issued."
+    },
+    "audience": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/audience_ref",
+      "description": "The intended audience (verifier service) for this proof. The verifier MUST reject proofs minted for a different audience."
+    },
+    "action": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/action_spec",
+      "description": "The exact action this proof authorises. The verifier MUST recompute the action_hash and compare."
+    },
+    "target": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/target_ref",
+      "description": "The target resource this proof authorises the action against."
+    },
+    "issued_at": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"
+    },
+    "not_before": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp",
+      "description": "Optional. If present, the proof is not valid before this timestamp."
+    },
+    "expires_at": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"
+    },
+    "canonicalisation": {
+      "type": "string",
+      "enum": ["ACTENON-JCS-STRICT-1", "RFC8785-JCS"],
+      "description": "The canonicalisation profile used to compute action_hash and signature. 'ACTENON-JCS-STRICT-1' is canonical for new proofs. 'RFC8785-JCS' is a deprecated alias for historical proofs. Any other value MUST be rejected with CANONICALISATION_FAILURE."
+    },
+    "action_hash": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/action_hash",
+      "description": "The hash of the canonicalised (action, target, parameters) tuple. The verifier MUST recompute this and compare."
+    },
+    "signature": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/signature",
+      "description": "The issuer's signature over the canonicalised proof payload."
+    },
+    "execution_mode": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/execution_mode",
+      "description": "The execution mode under which this proof was issued. MUST be carried through to the receipt and refusal."
+    },
+    "grant_id": {
+      "oneOf": [
+        {"$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier"},
+        {"type": "null"}
+      ],
+      "description": "Optional. The authority broker's grant identifier under which this proof was issued. Used for revocation cascade."
+    },
+    "authority_decision_id": {
+      "oneOf": [
+        {"$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier"},
+        {"type": "null"}
+      ],
+      "description": "Optional. The authority broker's decision record identifier. Used for audit."
+    },
+    "evidence_links": {
+      "type": "array",
+      "items": {"$ref": "urn:actenon:protocol:evidence-link:v1"},
+      "description": "Optional. Evidence links (transparency log entries, receipt chain entries, etc.) associated with this proof."
+    },
+    "custom_claims": {
+      "type": "object",
+      "description": "Optional. Implementation-specific custom claims. Consumers MUST ignore unknown claims. Custom claims MUST NOT override protocol-defined fields.",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

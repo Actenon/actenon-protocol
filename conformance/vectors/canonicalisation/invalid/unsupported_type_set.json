@@ -1,0 +1,8 @@
+{
+  "name": "unsupported_type_set",
+  "description": "A Python set is not a JSON type. MUST be rejected with CanonicalisationError. (Note: tuples ARE accepted and serialised as arrays, matching the actenon-kernel reference implementation.)",
+  "input_python_only": { "_type_hint": "set", "_value": [1, 2, 3] },
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "note": "In Python, the test constructs {1, 2, 3} directly. Sets have no JSON form."
+}

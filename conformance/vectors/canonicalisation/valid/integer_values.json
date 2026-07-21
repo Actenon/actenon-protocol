@@ -1,0 +1,6 @@
+{
+  "name": "integer_values",
+  "description": "Object with integer values of various sizes. Verifies integer serialisation (no leading zeros, no + sign).",
+  "input": { "zero": 0, "one": 1, "negative": -1, "big": 1234567890123456789, "neg_big": -9999999999999999999 },
+  "expected_canonical": "{\"big\":1234567890123456789,\"neg_big\":-9999999999999999999,\"negative\":-1,\"one\":1,\"zero\":0}"
+}

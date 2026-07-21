@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:issuer-metadata:v1",
+  "title": "IssuerMetadata",
+  "description": "Metadata about the issuer of an ExecutionProof. Used by verifiers to discover the issuer's public keys, trust status, and key-rotation policy. Protocol version 1.0.0.",
+  "type": "object",
+  "required": [
+    "issuer_id",
+    "issuer_type",
+    "key_discovery"
+  ],
+  "properties": {
+    "issuer_id": {
+      "type": "string",
+      "description": "The unique identifier of the issuer. Stable across key rotations."
+    },
+    "issuer_type": {
+      "type": "string",
+      "enum": ["authority_broker", "resource_owner", "delegated_signer"],
+      "description": "The type of issuer. 'authority_broker' = the issuer is an authority broker such as actenon-permit. 'resource_owner' = the issuer is the resource owner self-issuing (resource_owned mode). 'delegated_signer' = the issuer is a delegated signing service."
+    },
+    "key_discovery": {
+      "type": "object",
+      "required": ["method"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["well_known", "embedded", "external_registry"],
+          "description": "The key discovery method. 'well_known' = fetch from .well-known/actenon-issuer/<issuer_id>. 'embedded' = key material is embedded in the proof. 'external_registry' = fetch from a configured external registry."
+        },
+        "well_known_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Required when method is 'well_known'. The URL to fetch the issuer's key set and status."
+        },
+        "embedded_key": {
+          "type": "object",
+          "description": "Required when method is 'embedded'. The public key material embedded in the proof.",
+          "properties": {
+            "algorithm": {"type": "string"},
+            "public_key": {"type": "string", "description": "Base64url-encoded public key."},
+            "key_id": {"type": "string"}
+          },
+          "required": ["algorithm", "public_key", "key_id"],
+          "additionalProperties": false
+        },
+        "external_registry_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Required when method is 'external_registry'."
+        }
+      },
+      "additionalProperties": false
+    },
+    "trust_status": {
+      "type": "string",
+      "enum": ["active", "suspended", "revoked"],
+      "description": "Optional. The issuer's trust status as known at proof-issuance time. The verifier MUST re-fetch the current status before honouring the proof."
+    },
+    "key_rotation_policy": {
+      "type": "object",
+      "description": "Optional. The issuer's key rotation policy.",
+      "properties": {
+        "rotation_period_days": {"type": "integer", "minimum": 1},
+        "overlap_period_days": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

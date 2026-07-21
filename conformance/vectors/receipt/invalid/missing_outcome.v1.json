@@ -1,0 +1,16 @@
+{
+  "name": "missing_outcome",
+  "description": "ExecutionReceipt missing the required outcome field. MUST fail schema validation.",
+  "artefact": {
+    "protocol_version": "1.0.0",
+    "receipt_id": "rcpt_a1b2c3d4e5f6071829384756abcdef01",
+    "proof_id": "proof_a1b2c3d4e5f6071829384756abcdef02",
+    "execution_attempt_id": "exec_a1b2c3d4e5f6071829384756abcdef03",
+    "execution_mode": "brokered",
+    "executed_at": "2026-07-21T12:00:05Z",
+    "target": { "type": "payment-provider", "id": "stripe" },
+    "action": { "type": "payment.refund", "parameters": {} }
+  },
+  "expected_validation": "invalid",
+  "expected_error": "missing_required_field"
+}

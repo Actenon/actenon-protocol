@@ -1,0 +1,30 @@
+{
+  "name": "@actenon/protocol-types",
+  "version": "1.0.0",
+  "description": "Neutral, open, implementation-independent boundary contract for the Actenon ecosystem — TypeScript types.",
+  "license": "Apache-2.0",
+  "author": "Actenon Ltd",
+  "homepage": "https://github.com/Actenon/actenon-protocol",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Actenon/actenon-protocol",
+    "directory": "typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/Actenon/actenon-protocol/issues"
+  },
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "^1.1.0"
+  },
+  "files": [
+    "src/"
+  ]
+}

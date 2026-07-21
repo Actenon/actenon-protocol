@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:authorised-execution-intent:v1",
+  "title": "AuthorisedExecutionIntent",
+  "description": "The developer-facing claim that an agent wants to perform an action. This is NOT the boundary artefact (that is ExecutionProof). The intent is what the proof is bound to. The complete lifecycle (approval, attenuation, persistence) is owned by the authority broker (e.g. actenon-permit) and Cloud — NOT by this protocol. The protocol only defines the wire shape of the intent so that brokers and verifiers can agree on what is being authorised. Protocol version 1.0.0.",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "intent_id",
+    "subject",
+    "action",
+    "target",
+    "requested_at"
+  ],
+  "properties": {
+    "protocol_version": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/protocol_version"
+    },
+    "intent_id": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier",
+      "description": "The unique identifier of this intent. MUST use the 'intent_' prefix."
+    },
+    "subject": {
+      "type": "string",
+      "description": "The principal (agent, user, or service) on whose behalf the intent is made."
+    },
+    "action": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/action_spec",
+      "description": "The action the subject wants to perform."
+    },
+    "target": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/target_ref",
+      "description": "The target resource against which the action is to be performed."
+    },
+    "requested_at": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"
+    },
+    "requested_expiry": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp",
+      "description": "Optional. The requested expiry for any proof minted for this intent. The authority broker MAY honour, shorten, or ignore this."
+    },
+    "requested_execution_mode": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/execution_mode",
+      "description": "Optional. The requested execution mode. The authority broker MAY choose a different mode based on its policy."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional. Implementation-specific metadata. Consumers MUST ignore unknown fields.",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

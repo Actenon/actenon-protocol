@@ -1,0 +1,24 @@
+{
+  "name": "missing_required_field_proof_id",
+  "description": "ExecutionProof missing the required proof_id field. MUST fail schema validation.",
+  "artefact": {
+    "protocol_version": "1.0.0",
+    "issuer": {
+      "issuer_id": "actenon-permit-local",
+      "issuer_type": "authority_broker",
+      "key_discovery": { "method": "embedded", "embedded_key": { "algorithm": "EdDSA", "public_key": "x", "key_id": "k" } }
+    },
+    "subject": "agent:refund-bot-001",
+    "audience": { "type": "service", "id": "x" },
+    "action": { "type": "payment.refund", "parameters": {} },
+    "target": { "type": "payment-provider", "id": "stripe" },
+    "issued_at": "2026-07-21T12:00:00Z",
+    "expires_at": "2026-07-21T12:15:00Z",
+    "canonicalisation": "ACTENON-JCS-STRICT-1",
+    "action_hash": { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+    "signature": { "algorithm": "EdDSA", "key_id": "k", "value": "x" },
+    "execution_mode": "brokered"
+  },
+  "expected_validation": "invalid",
+  "expected_error": "missing_required_field"
+}

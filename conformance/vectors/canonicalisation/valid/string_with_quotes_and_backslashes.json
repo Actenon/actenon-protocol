@@ -1,0 +1,6 @@
+{
+  "name": "string_with_quotes_and_backslashes",
+  "description": "Strings with double-quotes and backslashes. Verifies correct escaping.",
+  "input": { "q": "she said \"hi\"", "bs": "C:\\Users\\test" },
+  "expected_canonical": "{\"bs\":\"C:\\\\Users\\\\test\",\"q\":\"she said \\\"hi\\\"\"}"
+}

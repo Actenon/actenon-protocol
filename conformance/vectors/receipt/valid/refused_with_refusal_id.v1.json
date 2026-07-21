@@ -1,0 +1,20 @@
+{
+  "name": "refused_with_refusal_id",
+  "description": "A valid ExecutionReceipt with outcome REFUSED, pointing to an ExecutionRefusal via refusal_id.",
+  "artefact": {
+    "protocol_version": "1.0.0",
+    "receipt_id": "rcpt_c1b2c3d4e5f6071829384756abcdef03",
+    "proof_id": "proof_c1b2c3d4e5f6071829384756abcdef04",
+    "execution_attempt_id": "exec_c1b2c3d4e5f6071829384756abcdef05",
+    "execution_mode": "brokered",
+    "executed_at": "2026-07-21T12:00:15Z",
+    "outcome": "REFUSED",
+    "target": { "type": "payment-provider", "id": "stripe" },
+    "action": {
+      "type": "payment.refund",
+      "parameters": { "invoice_id": "inv_abc123", "amount_cents": 2500, "currency": "GBP" }
+    },
+    "refusal_id": "rful_c1b2c3d4e5f6071829384756abcdef06"
+  },
+  "expected_validation": "valid"
+}

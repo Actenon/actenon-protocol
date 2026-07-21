@@ -1,0 +1,185 @@
+# OpenAPI 3.1 components for the Actenon protocol.
+#
+# This file defines reusable components (schemas) that can be referenced
+# by any OpenAPI 3.1 service that handles Actenon protocol artefacts.
+#
+# The schemas are referenced by their $id (URN) — the same URN used in
+# the JSON Schema files. Services that want to use these components
+# should $ref them like:
+#
+#   components:
+#     schemas:
+#       ExecutionProof:
+#         $ref: 'https://github.com/Actenon/actenon-protocol/raw/main/schemas/execution_proof.v1.json'
+#
+# Or, for inline use, copy the relevant schema file into the service's
+# own components section.
+
+openapi: "3.1.0"
+info:
+  title: Actenon Protocol Components
+  version: "1.0.0"
+  description: |
+    Reusable OpenAPI 3.1 components for the Actenon protocol. These are
+    reference schemas; services should import the canonical JSON Schemas
+    from the actenon-protocol repository rather than redefining them.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+# Note: this file does NOT define paths. It is a component library.
+# Services that consume the Actenon protocol will define their own paths
+# and reference these components.
+
+components:
+  schemas:
+
+    ProtocolVersion:
+      type: string
+      pattern: '^1\.[0-9]+\.[0-9]+$'
+      description: Protocol version, MAJOR.MINOR.PATCH.
+      example: "1.0.0"
+
+    Identifier:
+      type: string
+      pattern: '^[a-z][a-z0-9_]*_[0-9a-f]{16,}$'
+      description: |
+        Actenon protocol identifier. Format: <prefix><hex_chars>.
+        Prefixes: intent_, authz_, grant_, proof_, exec_, rcpt_, rful_.
+        Aliases (accepted, deprecated): act_ (= intent_), pccb_ (= proof_).
+      example: "proof_a1b2c3d4e5f6071829384756abcdef01"
+
+    Iso8601Timestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp with timezone. UTC recommended.
+
+    AudienceRef:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string }
+        id: { type: string }
+      additionalProperties: false
+
+    TargetRef:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string }
+        id: { type: string }
+      additionalProperties: false
+
+    ActionSpec:
+      type: object
+      required: [type, parameters]
+      properties:
+        type: { type: string }
+        parameters:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+
+    ActionHash:
+      type: object
+      required: [algorithm, value]
+      properties:
+        algorithm:
+          type: string
+          default: sha256
+        value:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+      additionalProperties: false
+
+    Signature:
+      type: object
+      required: [algorithm, key_id, value]
+      properties:
+        algorithm: { type: string, example: EdDSA }
+        key_id: { type: string }
+        value:
+          type: string
+          description: Base64url-encoded signature, no padding.
+      additionalProperties: false
+
+    ExecutionMode:
+      type: string
+      enum: [brokered, resource_owned]
+      description: |
+        brokered: deployment resolves scoped provider credential, verifies proof, invokes provider.
+        resource_owned: protected resource independently verifies proof and decides execution.
+
+    ExecutionOutcome:
+      type: string
+      enum: [EXECUTED, REFUSED, PARTIAL, UNKNOWN]
+
+    # --- Primary artefacts ---
+    # These reference the canonical JSON Schema files by relative path.
+    # When this YAML is in openapi/components.yaml, the relative path
+    # to schemas/ is ../schemas/.
+
+    ExecutionProof:
+      $ref: "../schemas/execution_proof.v1.json"
+
+    ExecutionReceipt:
+      $ref: "../schemas/execution_receipt.v1.json"
+
+    ExecutionRefusal:
+      $ref: "../schemas/execution_refusal.v1.json"
+
+    IssuerMetadata:
+      $ref: "../schemas/issuer_metadata.v1.json"
+
+    EvidenceLink:
+      $ref: "../schemas/evidence_link.v1.json"
+
+    AuthorisedExecutionIntent:
+      $ref: "../schemas/authorised_execution_intent.v1.json"
+
+  # Standard response shapes
+  responses:
+
+    ExecutionRefusalResponse:
+      description: |
+        The request was refused. The body is an ExecutionRefusal artefact.
+        The HTTP status code follows the table below; the body is the
+        same shape regardless of status.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ExecutionRefusal"
+      headers:
+        X-Actenon-Refusal-Code:
+          schema:
+            type: string
+          description: |
+            The disclosed_code from the ExecutionRefusal. Allows callers
+            to inspect the refusal code without parsing the body.
+          example: PROOF_INVALID
+
+  # Standard security scheme patterns (services choose which to apply)
+  securitySchemes:
+
+    ActenonProof:
+      type: http
+      scheme: bearer
+      bearerFormat: actenon-proof
+      description: |
+        The bearer token is an ExecutionProof serialised as JSON.
+        The verifier re-validates the proof on every request.
+
+    TrustedDisclosure:
+      type: apiKey
+      in: header
+      name: X-Actenon-Disclosure-Policy
+      description: |
+        Header that selects the disclosure policy. Values: "public"
+        (default), "trusted", "local_debug". Services SHOULD only
+        accept "trusted" and "local_debug" from authenticated internal
+        callers.
+
+# Standard examples used by services
+#
+# Note: examples in OpenAPI 3.1 are usually inline. We list them here
+# as references to the conformance vector files for consistency.

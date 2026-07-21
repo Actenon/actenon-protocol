@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:execution-refusal:v1",
+  "title": "ExecutionRefusal",
+  "description": "The durable record that an ExecutionProof was rejected or an action was refused at a protected resource or verifier. Carries a two-layer disclosure model: disclosed_code (public-safe) and optional internal_code (trusted-only). Protocol version 1.0.0.",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "refusal_id",
+    "execution_mode",
+    "refused_at",
+    "disclosed_code",
+    "retryable"
+  ],
+  "properties": {
+    "protocol_version": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/protocol_version"
+    },
+    "refusal_id": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier",
+      "description": "The unique identifier of this refusal. MUST use the 'rful_' prefix."
+    },
+    "proof_id": {
+      "oneOf": [
+        {"$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier"},
+        {"type": "null"}
+      ],
+      "description": "The identifier of the ExecutionProof that was refused, if a proof was supplied. null if PROOF_MISSING."
+    },
+    "execution_attempt_id": {
+      "oneOf": [
+        {"$ref": "urn:actenon:protocol:_common:v1#/$defs/identifier"},
+        {"type": "null"}
+      ],
+      "description": "The identifier of the execution attempt that was refused, if applicable."
+    },
+    "execution_mode": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/execution_mode",
+      "description": "The execution mode under which the refusal occurred. MUST be explicit — never inferred from deployment location."
+    },
+    "refused_at": {
+      "$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"
+    },
+    "disclosed_code": {
+      "type": "string",
+      "description": "The public-safe refusal code. Always present. Drawn from the disclosed_code column of the refusal catalogue. Public callers MUST rely only on this field.",
+      "enum": [
+        "MALFORMED_REQUEST",
+        "UNSUPPORTED_PROTOCOL_VERSION",
+        "CANONICALISATION_FAILURE",
+        "PROOF_MISSING",
+        "PROOF_INVALID",
+        "PROOF_EXPIRED",
+        "PROOF_NOT_YET_VALID",
+        "REPLAY_DETECTED",
+        "AUTHORITY_REVOKED",
+        "POLICY_REFUSAL",
+        "CREDENTIAL_UNAVAILABLE",
+        "PROVIDER_REFUSAL",
+        "PROVIDER_FAILURE",
+        "OUTCOME_UNKNOWN"
+      ]
+    },
+    "internal_code": {
+      "type": ["string", "null"],
+      "description": "The detailed refusal code. PRESENT only when the disclosure policy permits (trusted callers, internal logs). null under the 'public' disclosure policy. Trusted callers MAY use this for diagnostics but MUST NOT expose it to untrusted callers.",
+      "enum": [
+        null,
+        "MALFORMED_REQUEST",
+        "UNSUPPORTED_PROTOCOL_VERSION",
+        "CANONICALISATION_FAILURE",
+        "PROOF_MISSING",
+        "PROOF_INVALID",
+        "ISSUER_UNTRUSTED",
+        "SIGNATURE_INVALID",
+        "PROOF_EXPIRED",
+        "PROOF_NOT_YET_VALID",
+        "AUDIENCE_MISMATCH",
+        "TARGET_MISMATCH",
+        "ACTION_MISMATCH",
+        "PARAMETER_MISMATCH",
+        "REPLAY_DETECTED",
+        "AUTHORITY_REVOKED",
+        "POLICY_REFUSAL",
+        "CREDENTIAL_UNAVAILABLE",
+        "PROVIDER_REFUSAL",
+        "PROVIDER_FAILURE",
+        "OUTCOME_UNKNOWN"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "description": "A human-readable refusal message. MUST NOT leak cryptographic diagnostics under the 'public' disclosure policy."
+    },
+    "retryable": {
+      "type": "boolean",
+      "description": "Whether the caller may retry the request. True for PROOF_NOT_YET_VALID, CREDENTIAL_UNAVAILABLE, PROVIDER_FAILURE, OUTCOME_UNKNOWN. False for all others."
+    },
+    "evidence_links": {
+      "type": "array",
+      "items": {"$ref": "urn:actenon:protocol:evidence-link:v1"},
+      "description": "Optional. Evidence links associated with this refusal."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,345 @@
+# Refusal-code catalogue — v1
+#
+# This file is the canonical machine-readable catalogue of refusal codes
+# for the Actenon protocol. It is the source of truth for the
+# protocol/07-refusal.md specification.
+#
+# Catalogue version: 1
+# Protocol version: ^1
+# Stability: codes CANNOT be removed within protocol v1.x.
+#            Codes MAY be deprecated (with `deprecated_since`) but not removed.
+#            New codes MAY be added in minor versions.
+
+catalogue_version: "1"
+protocol_version: "^1"
+
+# Disclosure model
+# ----------------
+# Every refusal carries TWO codes on the wire:
+#   - disclosed_code: ALWAYS present. Safe for untrusted callers. Drawn from
+#     the `disclosed_code` column below.
+#   - internal_code: PRESENT only when the disclosure policy permits
+#     (trusted callers, internal logs, debug mode). Drawn from the
+#     `internal_code` column below. May be null even when present.
+#
+# Public callers MUST rely only on `disclosed_code`. They MUST NOT infer
+# the `internal_code` from the `disclosed_code`.
+#
+# Trusted callers MAY use `internal_code` for diagnostics, but MUST NOT
+# expose it to untrusted callers.
+
+codes:
+  # --- Request-shape refusals (before proof is examined) ---
+
+  - code: "MALFORMED_REQUEST"
+    category: "request_shape"
+    disclosed_code: "MALFORMED_REQUEST"
+    internal_code: "MALFORMED_REQUEST"
+    retryable: false
+    description: |
+      The request could not be parsed. The artefact is not valid JSON, or
+      does not conform to the schema, or is missing required fields.
+    disclosure_note: "Safe to disclose — no cryptographic information leaked."
+
+  - code: "UNSUPPORTED_PROTOCOL_VERSION"
+    category: "request_shape"
+    disclosed_code: "UNSUPPORTED_PROTOCOL_VERSION"
+    internal_code: "UNSUPPORTED_PROTOCOL_VERSION"
+    retryable: false
+    description: |
+      The artefact's `protocol_version` major does not match any version
+      supported by the consumer. The consumer MUST refuse before any
+      further processing.
+    disclosure_note: "Safe to disclose."
+
+  - code: "CANONICALISATION_FAILURE"
+    category: "request_shape"
+    disclosed_code: "CANONICALISATION_FAILURE"
+    internal_code: "CANONICALISATION_FAILURE"
+    retryable: false
+    description: |
+      The canonicalisation profile specified in the artefact is not
+      recognised, OR the canonicalisation process failed (e.g. the input
+      contains a float, exceeds the depth limit, or exceeds the size limit).
+    disclosure_note: "Safe to disclose."
+
+  # --- Proof-presence refusals ---
+
+  - code: "PROOF_MISSING"
+    category: "proof_presence"
+    disclosed_code: "PROOF_MISSING"
+    internal_code: "PROOF_MISSING"
+    retryable: false
+    description: |
+      No proof was supplied with the request. The boundary requires a proof
+      for this action.
+    disclosure_note: "Safe to disclose."
+    compatibility_alias: "PCCB_REQUIRED"
+
+  # --- Proof-validity refusals (umbrella + detailed) ---
+
+  - code: "PROOF_INVALID"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: null  # see specific codes below
+    retryable: false
+    description: |
+      The proof was examined and found to be invalid. This is the
+      umbrella code that is disclosed to public callers. The specific
+      reason (signature invalid, action mismatch, etc.) is carried in
+      `internal_code` when the disclosure policy permits.
+    disclosure_note: |
+      This is the DEFAULT disclosed code for all proof-validity failures
+      under the `public` disclosure policy. It deliberately does NOT
+      distinguish signature failures from action mismatches, to avoid
+      leaking cryptographic diagnostics to untrusted callers.
+
+  - code: "ISSUER_UNTRUSTED"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "ISSUER_UNTRUSTED"
+    retryable: false
+    description: |
+      The proof's issuer is not in the verifier's trust store. The
+      signature may be cryptographically valid but the issuer is not
+      authorised to issue proofs for this resource.
+    disclosure_note: |
+      Detailed code; only emitted under `trusted` disclosure. The public
+      disclosure collapses this to `PROOF_INVALID` to avoid revealing
+      which issuers the verifier trusts.
+
+  - code: "SIGNATURE_INVALID"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "SIGNATURE_INVALID"
+    retryable: false
+    description: |
+      The proof's cryptographic signature does not verify under the
+      issuer's published public key. The proof is forged or was signed
+      with a different key.
+    disclosure_note: |
+      Detailed code; only emitted under `trusted` disclosure. Public
+      callers see `PROOF_INVALID` instead, to avoid leaking information
+      about the signature verification process.
+
+  - code: "PROOF_EXPIRED"
+    category: "proof_validity"
+    disclosed_code: "PROOF_EXPIRED"
+    internal_code: "PROOF_EXPIRED"
+    retryable: false
+    description: |
+      The proof's `expires_at` is in the past.
+    disclosure_note: "Safe to disclose — the expiry is in the proof itself."
+    compatibility_alias: "PCCB_EXPIRED"
+
+  - code: "PROOF_NOT_YET_VALID"
+    category: "proof_validity"
+    disclosed_code: "PROOF_NOT_YET_VALID"
+    internal_code: "PROOF_NOT_YET_VALID"
+    retryable: true
+    description: |
+      The proof's `not_before` is in the future. The caller may retry
+      after `not_before`.
+    disclosure_note: "Safe to disclose — the not_before is in the proof itself."
+
+  - code: "AUDIENCE_MISMATCH"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "AUDIENCE_MISMATCH"
+    retryable: false
+    description: |
+      The proof was minted for a different audience (verifier service)
+      than the one receiving it.
+    disclosure_note: |
+      Detailed code; only emitted under `trusted` disclosure. Public
+      callers see `PROOF_INVALID` to avoid leaking the verifier's identity.
+
+  - code: "TARGET_MISMATCH"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "TARGET_MISMATCH"
+    retryable: false
+    description: |
+      The proof's `target` does not match the resource that the verifier
+      is protecting.
+    disclosure_note: "Detailed code; trusted disclosure only."
+
+  - code: "ACTION_MISMATCH"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "ACTION_MISMATCH"
+    retryable: false
+    description: |
+      The proof's `action.type` does not match the action being attempted.
+    disclosure_note: "Detailed code; trusted disclosure only."
+    compatibility_alias: "ACTION_MISMATCH"  # already canonical in kernel
+
+  - code: "PARAMETER_MISMATCH"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "PARAMETER_MISMATCH"
+    retryable: false
+    description: |
+      The proof's `action.parameters` do not match the parameters of the
+      action being attempted. The `action_hash` recomputed by the verifier
+      does not match the `action_hash` in the proof.
+    disclosure_note: "Detailed code; trusted disclosure only."
+    compatibility_aliases: ["ACTION_HASH_MISMATCH", "INTENT_MISMATCH", "SCOPE_CAPABILITY_MISMATCH"]
+
+  - code: "REPLAY_DETECTED"
+    category: "proof_validity"
+    disclosed_code: "REPLAY_DETECTED"
+    internal_code: "REPLAY_DETECTED"
+    retryable: false
+    description: |
+      The proof has already been used. The replay store records a prior
+      execution under this `proof_id` with a different `exec_` identifier.
+
+      Note: a retry with the SAME `exec_` identifier is NOT a replay; it
+      is an idempotent retry and returns the prior outcome (if supported).
+    disclosure_note: "Safe to disclose."
+    compatibility_alias: "DUPLICATE_REPLAY"
+
+  # --- Authority-state refusals ---
+
+  - code: "AUTHORITY_REVOKED"
+    category: "authority_state"
+    disclosed_code: "AUTHORITY_REVOKED"
+    internal_code: "AUTHORITY_REVOKED"
+    retryable: false
+    description: |
+      The authority under which the proof was minted has been revoked.
+      The proof may still be cryptographically valid, but the authority
+      broker has cancelled it (kill switch, parent grant revoked, etc.).
+    disclosure_note: "Safe to disclose."
+    compatibility_alias: "REVOKED"
+
+  - code: "POLICY_REFUSAL"
+    category: "authority_state"
+    disclosed_code: "POLICY_REFUSAL"
+    internal_code: "POLICY_REFUSAL"
+    retryable: false
+    description: |
+      The authority broker's policy engine refused to authorise this
+      action, even though the proof may be cryptographically valid.
+      Examples: budget exceeded, scope denied, out of scope, rate limited.
+    disclosure_note: "Safe to disclose at this granularity."
+    compatibility_aliases: ["SCOPE_DENIED", "OUT_OF_SCOPE", "BUDGET_EXCEEDED", "RATE_LIMITED", "NOT_ACTIVE"]
+
+  # --- Provider-side refusals (post-verification) ---
+
+  - code: "CREDENTIAL_UNAVAILABLE"
+    category: "provider"
+    disclosed_code: "CREDENTIAL_UNAVAILABLE"
+    internal_code: "CREDENTIAL_UNAVAILABLE"
+    retryable: true
+    description: |
+      The broker could not resolve a scoped provider credential for this
+      action. The credential may be missing, expired, or quarantined.
+    disclosure_note: "Safe to disclose."
+
+  - code: "PROVIDER_REFUSAL"
+    category: "provider"
+    disclosed_code: "PROVIDER_REFUSAL"
+    internal_code: "PROVIDER_REFUSAL"
+    retryable: false
+    description: |
+      The protected provider refused to execute the action. The proof was
+      valid and the credential was available, but the provider returned
+      an explicit refusal (e.g. the provider's own policy engine denied
+      the request).
+    disclosure_note: "Safe to disclose."
+
+  - code: "PROVIDER_FAILURE"
+    category: "provider"
+    disclosed_code: "PROVIDER_FAILURE"
+    internal_code: "PROVIDER_FAILURE"
+    retryable: true
+    description: |
+      The protected provider failed to execute the action due to an
+      internal error (timeout, network, 5xx). The proof was valid but
+      the outcome is unknown.
+    disclosure_note: "Safe to disclose."
+
+  # --- Outcome-unknown refusal ---
+
+  - code: "OUTCOME_UNKNOWN"
+    category: "outcome"
+    disclosed_code: "OUTCOME_UNKNOWN"
+    internal_code: "OUTCOME_UNKNOWN"
+    retryable: true
+    description: |
+      The verifier cannot determine the outcome. This is the catch-all
+      for unexpected errors. It is also the code that consumers SHOULD
+      use when they encounter a refusal code they do not recognise
+      (forward compatibility).
+    disclosure_note: "Safe to disclose."
+
+# Compatibility map: existing actenon-kernel FailureCode enum members
+# that are preserved as aliases of the new canonical codes.
+#
+# When a consumer receives a refusal carrying a compatibility_alias as
+# the disclosed_code (e.g. because it is talking to an older Kernel that
+# emits `PCCB_REQUIRED`), it MUST resolve the alias to the canonical
+# code via this map.
+compatibility_aliases:
+  # --- From actenon-kernel/actenon/outcomes.py FailureCode enum ---
+  "PCCB_REQUIRED": "PROOF_MISSING"
+  "PCCB_EXPIRED": "PROOF_EXPIRED"
+  "DUPLICATE_REPLAY": "REPLAY_DETECTED"
+  "SIGNATURE_INVALID": "SIGNATURE_INVALID"  # same name, same meaning
+  "ACTION_MISMATCH": "ACTION_MISMATCH"  # same name
+  "AUDIENCE_MISMATCH": "AUDIENCE_MISMATCH"  # same name
+
+  # From actenon-kernel refusal-code strings (audit D-08)
+  "PROOF_INVALID": "PROOF_INVALID"  # same name
+  "INTENT_MISMATCH": "PARAMETER_MISMATCH"
+  "TARGET_MISMATCH": "TARGET_MISMATCH"
+  "ACTION_HASH_MISMATCH": "PARAMETER_MISMATCH"
+  "ACTION_HASH_ALGORITHM_INVALID": "PARAMETER_MISMATCH"
+  "ACTION_HASH_INVALID": "PARAMETER_MISMATCH"
+  "SCOPE_MODE_INVALID": "PARAMETER_MISMATCH"
+  "SCOPE_CAPABILITY_MISMATCH": "PARAMETER_MISMATCH"
+  "TENANT_MISMATCH": "TARGET_MISMATCH"
+  "SUBJECT_MISMATCH": "TARGET_MISMATCH"
+  "PROOF_PAYLOAD_INVALID": "MALFORMED_REQUEST"
+  "PROOF_NOT_YET_VALID": "PROOF_NOT_YET_VALID"
+
+  # Permit FailureCode members (policy-decision side)
+  "NOT_ACTIVE": "POLICY_REFUSAL"
+  "REVOKED": "AUTHORITY_REVOKED"
+  "EXPIRED": "PROOF_EXPIRED"
+  "SCOPE_DENIED": "POLICY_REFUSAL"
+  "OUT_OF_SCOPE": "POLICY_REFUSAL"
+  "BUDGET_EXCEEDED": "POLICY_REFUSAL"
+  "RATE_LIMITED": "POLICY_REFUSAL"
+  "ENGINE_ERROR": "OUTCOME_UNKNOWN"
+
+# Disclosure policies
+# -------------------
+# A disclosure policy determines which code appears in the `disclosed_code`
+# field and whether `internal_code` is populated.
+disclosure_policies:
+  - name: "public"
+    description: |
+      Default policy. Safe for untrusted callers. Emits the umbrella
+      `PROOF_INVALID` code for all proof-validity failures. Does not
+      populate `internal_code`.
+    disclosed_code_source: "disclosed_code"  # column in the codes table
+    populate_internal_code: false
+
+  - name: "trusted"
+    description: |
+      Policy for trusted callers (internal services, audit logs, debug
+      mode). Populates both `disclosed_code` and `internal_code`.
+    disclosed_code_source: "disclosed_code"
+    populate_internal_code: true
+
+  - name: "local_debug"
+    description: |
+      Policy for local development only. Populates both fields and may
+      include additional diagnostic context in the `message` field.
+      MUST NOT be used in production.
+    disclosed_code_source: "disclosed_code"
+    populate_internal_code: true
+    include_diagnostics: true
