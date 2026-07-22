@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:boundary-manifest:v1",
+  "title": "BoundaryManifest",
+  "description": "Declarative mapping from HTTP endpoints to canonical Actenon actions. Language-neutral, framework-neutral. Drives middleware generation, test generation, and enforcement configuration. Protocol version 1.1.0.",
+  "type": "object",
+  "required": ["version", "boundaries"],
+  "properties": {
+    "version": {"type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$"},
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "service_name": {"type": "string"},
+        "description": {"type": "string"},
+        "framework": {"type": "string", "enum": ["fastapi", "flask", "django", "express", "nest", "generic"]}
+      },
+      "additionalProperties": true
+    },
+    "trusted_issuers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["issuer"],
+        "properties": {
+          "issuer": {"type": "string"},
+          "jwks_uri": {"type": "string"},
+          "audiences": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "enforcement": {
+      "type": "object",
+      "properties": {
+        "mode": {"type": "string", "enum": ["observe", "warn", "enforce"], "default": "enforce"},
+        "proof_header": {"type": "string", "default": "X-Actenon-Proof"},
+        "replay_store": {"type": "string", "enum": ["memory", "sqlite"], "default": "memory"}
+      }
+    },
+    "boundaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "route", "action", "execution_mode"],
+        "properties": {
+          "id": {"type": "string", "description": "Unique boundary identifier"},
+          "route": {"type": "string", "description": "HTTP route pattern, e.g. 'POST /refunds'"},
+          "action": {"type": "string", "description": "Canonical Actenon action type, e.g. 'payment.refund'"},
+          "target": {
+            "type": "object",
+            "required": ["from"],
+            "properties": {
+              "type": {"type": "string"},
+              "from": {"type": "string", "description": "Expression to extract target from request, e.g. 'body.payment_intent_id'"}
+            }
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["from"],
+              "properties": {
+                "from": {"type": "string", "description": "Expression to extract param from request"},
+                "type": {"type": "string", "enum": ["string", "integer", "float", "boolean"]}
+              }
+            }
+          },
+          "execution_mode": {"type": "string", "enum": ["brokered", "resource_owned"]},
+          "audience": {"type": "string"},
+          "proof": {
+            "type": "object",
+            "properties": {
+              "source": {"type": "string", "enum": ["header", "body"], "default": "header"},
+              "name": {"type": "string", "default": "X-Actenon-Proof"}
+            }
+          }
+        }
+      }
+    }
+  }
+}
