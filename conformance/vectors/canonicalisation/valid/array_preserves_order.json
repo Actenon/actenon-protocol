@@ -1,0 +1,10 @@
+{
+  "name": "array_preserves_order",
+  "description": "Arrays preserve order. [1,2,3] is the canonical form.",
+  "input": [
+    1,
+    2,
+    3
+  ],
+  "expected_canonical": "[1,2,3]"
+}

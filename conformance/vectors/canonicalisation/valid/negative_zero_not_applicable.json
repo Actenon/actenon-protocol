@@ -1,0 +1,8 @@
+{
+  "name": "negative_zero_not_applicable",
+  "description": "Negative zero is not a valid integer. Zero is always 0. This vector verifies 0 serialises as '0'.",
+  "input": {
+    "zero": 0
+  },
+  "expected_canonical": "{\"zero\":0}"
+}

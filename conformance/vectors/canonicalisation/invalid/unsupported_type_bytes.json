@@ -1,0 +1,7 @@
+{
+  "name": "unsupported_type_bytes",
+  "description": "Python bytes is not a JSON type. Python-only.",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "note": "In Python, the test constructs b'hello' directly."
+}

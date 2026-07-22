@@ -1,0 +1,8 @@
+{
+  "name": "float_zero",
+  "description": "Float zero (0.0). MUST be rejected even though value is zero.",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "input_json": "0.0",
+  "note": "0.0 is a float, not an integer. Use 0 instead."
+}

@@ -1,6 +1,10 @@
 {
   "name": "key_order_byte_vs_codepoint",
-  "description": "Keys whose UTF-8 byte order differs from naive codepoint order. Verifies byte-order sorting (not codepoint). The key 'Z' (U+005A = byte 0x5A) sorts before 'é' (U+00E9 = bytes 0xC3 0xA9).",
-  "input": { "é": 1, "Z": 2, "a": 3 },
+  "description": "Keys whose UTF-8 byte order differs from naive codepoint order. Z (0x5A) sorts before é (0xC3A9).",
+  "input": {
+    "é": 1,
+    "Z": 2,
+    "a": 3
+  },
   "expected_canonical": "{\"Z\":2,\"a\":3,\"é\":1}"
 }

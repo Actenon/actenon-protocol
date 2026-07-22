@@ -1,0 +1,13 @@
+{
+  "name": "integer_boundary",
+  "description": "Integer boundary values: max int32, min int32, max int53, power-of-2 boundaries.",
+  "input": {
+    "max_int32": 2147483647,
+    "min_int32": -2147483648,
+    "max_int53": 9007199254740991,
+    "min_int53": -9007199254740992,
+    "power2_63": 9223372036854775807,
+    "neg_power2_63": -9223372036854775808
+  },
+  "expected_canonical": "{\"max_int32\":2147483647,\"max_int53\":9007199254740991,\"min_int32\":-2147483648,\"min_int53\":-9007199254740992,\"neg_power2_63\":-9223372036854775808,\"power2_63\":9223372036854775807}"
+}

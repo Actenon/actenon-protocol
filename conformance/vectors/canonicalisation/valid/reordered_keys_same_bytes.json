@@ -1,0 +1,10 @@
+{
+  "name": "reordered_keys_same_bytes",
+  "description": "Two objects with the same keys in different order produce the same canonical bytes.",
+  "input": {
+    "b": 2,
+    "a": 1,
+    "c": 3
+  },
+  "expected_canonical": "{\"a\":1,\"b\":2,\"c\":3}"
+}

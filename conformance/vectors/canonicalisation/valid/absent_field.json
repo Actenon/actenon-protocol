@@ -1,0 +1,8 @@
+{
+  "name": "absent_field",
+  "description": "Object with an absent field (field simply not present). Compared with absent_vs_null to show the difference.",
+  "input": {
+    "present": 1
+  },
+  "expected_canonical": "{\"present\":1}"
+}

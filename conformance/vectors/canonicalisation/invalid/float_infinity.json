@@ -1,0 +1,8 @@
+{
+  "name": "float_infinity",
+  "description": "Infinity value. MUST be rejected.",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "input_json": "Infinity",
+  "note": "JSON does not support Infinity."
+}

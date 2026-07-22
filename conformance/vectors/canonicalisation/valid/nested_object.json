@@ -1,6 +1,14 @@
 {
   "name": "nested_object",
-  "description": "A nested object. Verifies recursive key sorting.",
-  "input": { "outer": { "z": 1, "a": 2 }, "inner": { "c": 3 } },
+  "description": "Nested object. Verifies recursive key sorting.",
+  "input": {
+    "outer": {
+      "z": 1,
+      "a": 2
+    },
+    "inner": {
+      "c": 3
+    }
+  },
   "expected_canonical": "{\"inner\":{\"c\":3},\"outer\":{\"a\":2,\"z\":1}}"
 }

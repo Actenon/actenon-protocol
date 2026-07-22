@@ -1,6 +1,10 @@
 {
   "name": "unicode_strings",
-  "description": "Object with non-ASCII string values. Verifies that non-ASCII is NOT \\u-escaped (RFC 8785 §3.2.2).",
-  "input": { "name": "café", "city": "東京", "emoji_free": "Ωμέγα" },
-  "expected_canonical": "{\"city\":\"東京\",\"emoji_free\":\"Ωμέγα\",\"name\":\"café\"}"
+  "description": "Non-ASCII strings. Verifies no backslash-u escaping (RFC 8785 section 3.2.2).",
+  "input": {
+    "name": "café",
+    "city": "東京",
+    "omega": "Ωμέγα"
+  },
+  "expected_canonical": "{\"city\":\"東京\",\"name\":\"café\",\"omega\":\"Ωμέγα\"}"
 }

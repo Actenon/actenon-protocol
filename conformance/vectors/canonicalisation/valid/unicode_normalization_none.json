@@ -1,0 +1,9 @@
+{
+  "name": "unicode_normalization_none",
+  "description": "No Unicode normalisation. Precomposed é (U+00E9) and decomposed e+combining-acute (U+0065 U+0301) produce different bytes.",
+  "input": {
+    "precomposed": "café",
+    "decomposed": "café"
+  },
+  "expected_canonical": "{\"decomposed\":\"café\",\"precomposed\":\"café\"}"
+}

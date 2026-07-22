@@ -1,8 +1,7 @@
 {
   "name": "non_string_key",
-  "description": "Object with non-string key (integer). MUST be rejected with CanonicalisationError. (Note: JSON object keys are always strings; this vector is for Python implementations that may have a dict with int keys.)",
-  "input_python_only": { "_keys": [1, 2], "_values": ["a", "b"] },
+  "description": "Object with non-string key (integer). Python-only.",
   "expected_error": "CanonicalisationError",
   "expected_refusal_code": "CANONICALISATION_FAILURE",
-  "note": "In Python, the test constructs {1: 'a', 2: 'b'} directly."
+  "note": "In Python, the test constructs {1: 'a'} directly. JSON objects always have string keys."
 }
