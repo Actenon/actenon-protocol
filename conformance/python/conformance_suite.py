@@ -681,6 +681,285 @@ class TestExecutionModes:
                 assert vector["expected_internal_code"] == "AUDIENCE_MISMATCH"
 
 
+# ---------- 5b. Execution results (Prompt 9) ----------
+
+class TestExecutionResults:
+    """Conformance for the discriminated ExecutionResult model.
+
+    The two result shapes (brokered vs resource_owned) are NOT
+    interchangeable. The mode field is the discriminator. Hard rules
+    enforced at construction:
+
+      * brokered succeeded requires provider_execution_observed=True
+      * resource_owned succeeded requires resource_receipt_verified=True
+      * resource_owned submitted requires finality=non_final
+      * mode-specific fields must not mix
+    """
+
+    def test_both_state_families_defined(self):
+        from actenon_protocol import (
+            BrokeredExecutionState,
+            ResourceOwnedExecutionState,
+        )
+
+        assert set(s.value for s in BrokeredExecutionState) == {
+            "succeeded",
+            "failed",
+            "refused",
+            "outcome_unknown",
+        }
+        assert set(s.value for s in ResourceOwnedExecutionState) == {
+            "submitted",
+            "accepted",
+            "refused",
+            "succeeded",
+            "failed",
+            "outcome_unknown",
+        }
+
+    def test_brokered_succeeded_requires_observation(self):
+        """A brokered result with state=succeeded and provider_execution_observed=False
+        must be rejected at construction. This is what prevents a
+        credential-resolution success from being reported as execution success."""
+        from actenon_protocol import (
+            BrokeredExecutionResult,
+            BrokeredExecutionState,
+            ExecutionResultValidationError,
+        )
+
+        with pytest.raises(ExecutionResultValidationError):
+            BrokeredExecutionResult(
+                state=BrokeredExecutionState.SUCCEEDED,
+                verified_by="x",
+                executed_by="x",
+                provider_execution_observed=False,
+                attempt_id="exec_x",
+                occurred_at="2026-07-22T10:00:00Z",
+            )
+
+    def test_resource_owned_succeeded_requires_verified_receipt(self):
+        """A resource_owned result with state=succeeded and
+        resource_receipt_verified=False must be rejected. This is what
+        prevents a forged receipt from being reported as execution success."""
+        from actenon_protocol import (
+            ExecutionResultValidationError,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+        )
+
+        with pytest.raises(ExecutionResultValidationError):
+            ResourceOwnedExecutionResult(
+                state=ResourceOwnedExecutionState.SUCCEEDED,
+                verified_by="r",
+                executed_by="r",
+                attempt_id="exec_y",
+                occurred_at="2026-07-22T10:00:00Z",
+                provider_execution_observed=True,
+                resource_receipt_received=True,
+                resource_receipt_verified=False,
+            )
+
+    def test_resource_owned_submitted_requires_non_final(self):
+        """submitted is non_final. Submission is NOT execution."""
+        from actenon_protocol import (
+            RESOURCE_OWNED_FINALITY,
+            FinalityStatus,
+            ResourceOwnedExecutionState,
+        )
+
+        assert (
+            RESOURCE_OWNED_FINALITY[ResourceOwnedExecutionState.SUBMITTED]
+            == FinalityStatus.NON_FINAL
+        )
+
+    def test_resource_owned_submitted_requires_no_observation(self):
+        """submitted requires provider_execution_observed=False and
+        resource_receipt_received=False."""
+        from actenon_protocol import (
+            ExecutionResultValidationError,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+        )
+
+        with pytest.raises(ExecutionResultValidationError):
+            ResourceOwnedExecutionResult(
+                state=ResourceOwnedExecutionState.SUBMITTED,
+                verified_by="r",
+                executed_by="r",
+                attempt_id="exec_z",
+                occurred_at="2026-07-22T10:00:00Z",
+                provider_execution_observed=True,
+            )
+
+    def test_serialisation_preserves_mode_distinction(self):
+        """serialise_result() must produce a dict whose 'mode' field
+        matches the result type, and the dicts of the two modes must
+        not share mode-specific keys."""
+        from actenon_protocol import (
+            BrokeredExecutionResult,
+            BrokeredExecutionState,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+            serialise_result,
+        )
+
+        b = BrokeredExecutionResult(
+            state=BrokeredExecutionState.SUCCEEDED,
+            verified_by="b",
+            executed_by="b",
+            provider_execution_observed=True,
+            attempt_id="exec_b",
+            occurred_at="2026-07-22T10:00:00Z",
+            receipt_received=True,
+            receipt_verified=True,
+        )
+        r = ResourceOwnedExecutionResult(
+            state=ResourceOwnedExecutionState.SUBMITTED,
+            verified_by="r",
+            executed_by="r",
+            attempt_id="exec_r",
+            occurred_at="2026-07-22T10:00:00Z",
+            submission_reference="sub_1",
+        )
+
+        b_dict = serialise_result(b)
+        r_dict = serialise_result(r)
+
+        assert b_dict["mode"] == "brokered"
+        assert r_dict["mode"] == "resource_owned"
+
+        # brokered-only keys must not appear in resource_owned
+        brokered_only = {"receipt_received", "receipt_verified", "provider_evidence", "reconciliation_status"}
+        resource_only = {"resource_receipt_received", "resource_receipt_verified", "resource_receipt", "submission_reference"}
+        assert brokered_only.isdisjoint(r_dict.keys()), (
+            f"resource_owned result carries brokered-only keys: {brokered_only & set(r_dict.keys())}"
+        )
+        assert resource_only.isdisjoint(b_dict.keys()), (
+            f"brokered result carries resource_owned-only keys: {resource_only & set(b_dict.keys())}"
+        )
+
+    def test_valid_vectors_construct(self):
+        """Every valid execution-result vector must construct without raising."""
+        from actenon_protocol import (
+            BrokeredExecutionResult,
+            BrokeredExecutionState,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+        )
+
+        for _vector_name, vector in _load_vectors("execution-result", "valid"):
+            artefact = vector["artefact"]
+            assert artefact["mode"] in ("brokered", "resource_owned")
+            if artefact["mode"] == "brokered":
+                BrokeredExecutionResult(
+                    state=BrokeredExecutionState(artefact["state"]),
+                    verified_by=artefact["verified_by"],
+                    executed_by=artefact["executed_by"],
+                    provider_execution_observed=artefact["provider_execution_observed"],
+                    attempt_id=artefact["attempt_id"],
+                    occurred_at=artefact["occurred_at"],
+                    receipt_received=artefact.get("receipt_received", False),
+                    receipt_verified=artefact.get("receipt_verified", False),
+                    provider_evidence=artefact.get("provider_evidence", {}),
+                    reconciliation_status=artefact.get("reconciliation_status"),
+                )
+            else:
+                ResourceOwnedExecutionResult(
+                    state=ResourceOwnedExecutionState(artefact["state"]),
+                    verified_by=artefact["verified_by"],
+                    executed_by=artefact["executed_by"],
+                    attempt_id=artefact["attempt_id"],
+                    occurred_at=artefact["occurred_at"],
+                    provider_execution_observed=artefact.get("provider_execution_observed", False),
+                    resource_receipt_received=artefact.get("resource_receipt_received", False),
+                    resource_receipt_verified=artefact.get("resource_receipt_verified", False),
+                    resource_receipt=artefact.get("resource_receipt"),
+                    submission_reference=artefact.get("submission_reference"),
+                )
+
+    def test_invalid_vectors_rejected(self):
+        """Every invalid execution-result vector must raise at construction."""
+        from actenon_protocol import (
+            BrokeredExecutionResult,
+            BrokeredExecutionState,
+            ExecutionResultValidationError,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+        )
+
+        for _vector_name, vector in _load_vectors("execution-result", "invalid"):
+            artefact = vector["artefact"]
+            violation = vector.get("expected_violation", "")
+            # Mixed-mode-field vectors are caught by the schema layer, not
+            # the dataclass layer (the dataclass silently drops unknown
+            # fields). Skip them here; they are covered by the schema test.
+            if violation == "mode_field_mixing":
+                continue
+            # Finality-vs-state mismatches are also schema-only: the dataclass
+            # derives finality from state, so it cannot represent the
+            # contradiction. The schema's if/then rules catch it.
+            if violation == "submitted_must_be_non_final":
+                continue
+            with pytest.raises(ExecutionResultValidationError):
+                if artefact["mode"] == "brokered":
+                    BrokeredExecutionResult(
+                        state=BrokeredExecutionState(artefact["state"]),
+                        verified_by=artefact["verified_by"],
+                        executed_by=artefact["executed_by"],
+                        provider_execution_observed=artefact["provider_execution_observed"],
+                        attempt_id=artefact["attempt_id"],
+                        occurred_at=artefact["occurred_at"],
+                        receipt_received=artefact.get("receipt_received", False),
+                        receipt_verified=artefact.get("receipt_verified", False),
+                        provider_evidence=artefact.get("provider_evidence", {}),
+                        reconciliation_status=artefact.get("reconciliation_status"),
+                    )
+                else:
+                    ResourceOwnedExecutionResult(
+                        state=ResourceOwnedExecutionState(artefact["state"]),
+                        verified_by=artefact["verified_by"],
+                        executed_by=artefact["executed_by"],
+                        attempt_id=artefact["attempt_id"],
+                        occurred_at=artefact["occurred_at"],
+                        provider_execution_observed=artefact.get("provider_execution_observed", False),
+                        resource_receipt_received=artefact.get("resource_receipt_received", False),
+                        resource_receipt_verified=artefact.get("resource_receipt_verified", False),
+                        resource_receipt=artefact.get("resource_receipt"),
+                        submission_reference=artefact.get("submission_reference"),
+                    )
+
+    def test_json_schema_rejects_invalid_vectors(self):
+        """The JSON Schema in schemas/execution_result.v1.json must reject
+        every invalid vector and accept every valid vector. Loads the
+        schema registry inline so this test class is self-contained."""
+        import json as _json
+
+        from jsonschema import Draft202012Validator
+        from referencing import Registry, Resource
+
+        # Load all schemas and build a registry so $ref to _common.v1.json resolves.
+        schemas: dict[str, dict] = {}
+        for path in SCHEMAS_DIR.glob("*.v1.json"):
+            with path.open("r", encoding="utf-8") as f:
+                schema = _json.load(f)
+            schemas[schema["$id"]] = schema
+
+        def retrieve(uri: str):
+            return Resource.from_contents(schemas[uri])
+
+        registry = Registry(retrieve=retrieve)
+        schema = schemas["urn:actenon:protocol:execution-result:v1"]
+        validator = Draft202012Validator(schema, registry=registry)
+
+        for vector_name, vector in _load_vectors("execution-result", "valid"):
+            errors = list(validator.iter_errors(vector["artefact"]))
+            assert not errors, f"valid vector {vector_name!r} rejected by schema: {[e.message for e in errors]}"
+
+        for vector_name, vector in _load_vectors("execution-result", "invalid"):
+            errors = list(validator.iter_errors(vector["artefact"]))
+            assert errors, f"invalid vector {vector_name!r} accepted by schema (should be rejected)"
+
+
 # ---------- 6. Version constants ----------
 
 class TestVersionConstants:

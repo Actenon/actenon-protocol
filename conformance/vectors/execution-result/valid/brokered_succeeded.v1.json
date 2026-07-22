@@ -1,0 +1,18 @@
+{
+  "description": "Valid brokered succeeded result. Provider execution was observed; receipt was issued and verified.",
+  "artefact": {
+    "mode": "brokered",
+    "state": "succeeded",
+    "finality": "final",
+    "verified_by": "actenon-permit-broker",
+    "executed_by": "actenon-permit-broker",
+    "provider_execution_observed": true,
+    "receipt_received": true,
+    "receipt_verified": true,
+    "attempt_id": "exec_a1b2c3d4e5f60718",
+    "occurred_at": "2026-07-22T10:00:00Z",
+    "provider_evidence": {"issue_number": 42, "issue_url": "https://github.com/actenon/demo/issues/42"},
+    "reconciliation_status": null
+  },
+  "expected_valid": true
+}

@@ -1,0 +1,20 @@
+{
+  "description": "INVALID: mixes brokered-only field (receipt_verified) with resource_owned mode. The two result shapes are not interchangeable.",
+  "artefact": {
+    "mode": "resource_owned",
+    "state": "submitted",
+    "finality": "non_final",
+    "verified_by": "resource-boundary-stripe",
+    "executed_by": "stripe",
+    "provider_execution_observed": false,
+    "resource_receipt_received": false,
+    "resource_receipt_verified": false,
+    "receipt_verified": true,
+    "attempt_id": "exec_111b2c3d4e5f60718",
+    "occurred_at": "2026-07-22T10:07:00Z",
+    "resource_receipt": null,
+    "submission_reference": "sub_abc123"
+  },
+  "expected_valid": false,
+  "expected_violation": "mode_field_mixing"
+}

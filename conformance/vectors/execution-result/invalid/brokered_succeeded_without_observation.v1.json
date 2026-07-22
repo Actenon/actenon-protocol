@@ -1,0 +1,19 @@
+{
+  "description": "INVALID: brokered state=succeeded but provider_execution_observed=false. A credential-resolution success cannot be reported as execution success.",
+  "artefact": {
+    "mode": "brokered",
+    "state": "succeeded",
+    "finality": "final",
+    "verified_by": "actenon-permit-broker",
+    "executed_by": "actenon-permit-broker",
+    "provider_execution_observed": false,
+    "receipt_received": true,
+    "receipt_verified": true,
+    "attempt_id": "exec_e1b2c3d4e5f60718",
+    "occurred_at": "2026-07-22T10:04:00Z",
+    "provider_evidence": {},
+    "reconciliation_status": null
+  },
+  "expected_valid": false,
+  "expected_violation": "brokered_succeeded_requires_observation"
+}

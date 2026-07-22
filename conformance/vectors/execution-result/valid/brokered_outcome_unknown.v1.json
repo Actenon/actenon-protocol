@@ -1,0 +1,18 @@
+{
+  "description": "Valid brokered outcome_unknown result. Provider call timed out; finality is non_final.",
+  "artefact": {
+    "mode": "brokered",
+    "state": "outcome_unknown",
+    "finality": "non_final",
+    "verified_by": "actenon-permit-broker",
+    "executed_by": "actenon-permit-broker",
+    "provider_execution_observed": false,
+    "receipt_received": false,
+    "receipt_verified": false,
+    "attempt_id": "exec_b1b2c3d4e5f60718",
+    "occurred_at": "2026-07-22T10:01:00Z",
+    "provider_evidence": {},
+    "reconciliation_status": "pending"
+  },
+  "expected_valid": true
+}

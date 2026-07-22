@@ -23,6 +23,19 @@ from actenon_protocol.canonicalisation import (
     canonicalize_json,
 )
 from actenon_protocol.execution_modes import ExecutionMode
+from actenon_protocol.execution_results import (
+    BROKERED_FINALITY,
+    RESOURCE_OWNED_FINALITY,
+    BrokeredExecutionResult,
+    BrokeredExecutionState,
+    ExecutionResult,
+    ExecutionResultValidationError,
+    FinalityStatus,
+    ResourceOwnedExecutionResult,
+    ResourceOwnedExecutionState,
+    result_mode,
+    serialise_result,
+)
 from actenon_protocol.identifiers import (
     ALIASES,
     FORBIDDEN_PREFIXES,
@@ -89,6 +102,18 @@ __all__ = [
     "ExecutionOutcome",
     # Execution modes
     "ExecutionMode",
+    # Execution results (Prompt 9)
+    "BrokeredExecutionResult",
+    "BrokeredExecutionState",
+    "ResourceOwnedExecutionResult",
+    "ResourceOwnedExecutionState",
+    "ExecutionResult",
+    "ExecutionResultValidationError",
+    "FinalityStatus",
+    "BROKERED_FINALITY",
+    "RESOURCE_OWNED_FINALITY",
+    "result_mode",
+    "serialise_result",
 ]
 
 __version__ = PROTOCOL_VERSION

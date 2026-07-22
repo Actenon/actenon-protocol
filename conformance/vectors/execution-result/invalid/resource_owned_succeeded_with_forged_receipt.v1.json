@@ -1,0 +1,19 @@
+{
+  "description": "INVALID: resource_owned state=succeeded but resource_receipt_verified=false. A forged or unverifiable receipt cannot be reported as execution success.",
+  "artefact": {
+    "mode": "resource_owned",
+    "state": "succeeded",
+    "finality": "final",
+    "verified_by": "resource-boundary-stripe",
+    "executed_by": "stripe",
+    "provider_execution_observed": true,
+    "resource_receipt_received": true,
+    "resource_receipt_verified": false,
+    "attempt_id": "exec_f1b2c3d4e5f60718",
+    "occurred_at": "2026-07-22T10:05:00Z",
+    "resource_receipt": {"forged": true},
+    "submission_reference": "sub_abc123"
+  },
+  "expected_valid": false,
+  "expected_violation": "resource_owned_succeeded_requires_verified_receipt"
+}
