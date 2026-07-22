@@ -6,7 +6,7 @@
 [![Version: v1.1.0](https://img.shields.io/badge/Version-v1.1.0-blue.svg)](CHANGELOG.md)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
 [![PyPI: actenon-protocol](https://img.shields.io/pypi/v/actenon-protocol?label=PyPI)](https://pypi.org/project/actenon-protocol/)
-[![npm: @actenon/protocol-types](https://img.shields.io/npm/v/@actenon/protocol-types?label=npm)](https://www.npmjs.com/package/@actenon/protocol-types)
+[![TypeScript types v1.0.0](https://img.shields.io/badge/TypeScript%20types-v1.0.0%20(source)-orange.svg)](typescript/)
 [![Zero dependencies](https://img.shields.io/badge/Dependencies-0-success.svg)](pyproject.toml)
 [![Publish](https://github.com/Actenon/actenon-protocol/actions/workflows/publish.yml/badge.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/publish.yml)
 [![Code style: ruff](https://img.shields.io/badge/Code%20style-ruff-black.svg)](https://docs.astral.sh/ruff/)
@@ -129,8 +129,8 @@ See [`identifiers/prefixes.v1.yaml`](identifiers/prefixes.v1.yaml).
 
 | Implementation | Status | Path |
 |---|---|---|
-| **Python reference** | Stable v1.1.0 | [`python/`](python/) — `pip install actenon-protocol` |
-| **TypeScript types** | Stable v1.1.0 | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
+| **Python reference** | Stable v1.1.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
+| **TypeScript types** | v1.0.0 (source — npm publish pending) | [`typescript/`](typescript/) — `@actenon/protocol-types` |
 | **Go SDK** | Conformant | in `actenon-kernel` `sdk/go/` |
 | **Rust SDK** | Conformant | in `actenon-kernel` `sdk/rust/` |
 | **OpenAPI 3.1 components** | Stable | [`openapi/components.yaml`](openapi/components.yaml) — drop into any OpenAPI-aware toolchain |
@@ -144,8 +144,13 @@ Every implementation runs against the same hash-locked conformance vectors in [`
 pip install actenon-protocol
 ```
 
+TypeScript types are at v1.0.0 in [`typescript/`](typescript/) — hand-written types matching the JSON Schemas. Built and tested in CI; **not yet published to npm**. Install from source:
+
 ```bash
-npm install @actenon/protocol-types
+git clone https://github.com/Actenon/actenon-protocol.git
+cd actenon-protocol/typescript
+npm install && npm run build
+npm link                              # then `npm link @actenon/protocol-types` in your project
 ```
 
 ## Use
