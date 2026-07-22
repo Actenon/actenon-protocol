@@ -8,7 +8,7 @@
 [![PyPI: actenon-protocol](https://img.shields.io/pypi/v/actenon-protocol?label=PyPI)](https://pypi.org/project/actenon-protocol/)
 [![TypeScript types v1.0.0](https://img.shields.io/badge/TypeScript%20types-v1.0.0%20(source)-orange.svg)](typescript/)
 [![Zero dependencies](https://img.shields.io/badge/Dependencies-0-success.svg)](pyproject.toml)
-[![Publish](https://github.com/Actenon/actenon-protocol/actions/workflows/publish.yml/badge.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/publish.yml)
+[![CI](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml)
 [![Code style: ruff](https://img.shields.io/badge/Code%20style-ruff-black.svg)](https://docs.astral.sh/ruff/)
 [![Spec: stable](https://img.shields.io/badge/Spec-stable-success.svg)](SPEC.md)
 
@@ -187,8 +187,12 @@ The protocol ships hash-locked valid and invalid fixtures for:
 - refusal code catalogue & two-layer disclosure
 - execution-mode distinction (brokered vs resource-owned, disjoint field sets)
 
+**117 vectors run on every PR** via the [CI workflow](.github/workflows/ci.yml), across Python 3.10 / 3.11 / 3.12, plus the TypeScript conformance suite (21 tests). Run locally:
+
 ```bash
-python -m actenon_protocol.conformance run --require-complete
+pip install -e ".[dev]"
+python -m pytest conformance/python/ -v          # 117 pass, 21 skipped
+cd typescript && bun install && bun test          # 21 pass, 40 expect() calls
 ```
 
 If your implementation passes these vectors, you conform to v1.1.0. If it does not, you don't. See [`conformance/`](conformance/).
