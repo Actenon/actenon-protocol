@@ -8,7 +8,12 @@ from __future__ import annotations
 
 # The protocol version. MAJOR.MINOR.PATCH.
 # See VERSIONING.md for what each bump means.
-PROTOCOL_VERSION = "1.0.0"
+#
+# 1.1.0 (Prompt 9): added the ExecutionResult discriminated union
+# (BrokeredExecutionResult | ResourceOwnedExecutionResult) and the
+# per-mode state machines. Purely additive: no existing v1.0.0
+# artefact's wire format changed. See protocol/12-execution-results.md.
+PROTOCOL_VERSION = "1.1.0"
 
 # The canonical canonicalisation profile label.
 # This is the label that newly-minted proofs and receipts MUST use.

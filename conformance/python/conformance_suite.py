@@ -965,7 +965,7 @@ class TestExecutionResults:
 class TestVersionConstants:
 
     def test_protocol_version(self):
-        assert PROTOCOL_VERSION == "1.0.0"
+        assert PROTOCOL_VERSION == "1.1.0"
 
     def test_canonicalisation_profile(self):
         assert CANONICALISATION_PROFILE == "ACTENON-JCS-STRICT-1"
