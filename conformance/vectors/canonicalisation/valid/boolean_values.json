@@ -1,0 +1,9 @@
+{
+  "name": "boolean_values",
+  "description": "Boolean true and false.",
+  "input": {
+    "t": true,
+    "f": false
+  },
+  "expected_canonical": "{\"f\":false,\"t\":true}"
+}

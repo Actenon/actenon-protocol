@@ -1,0 +1,7 @@
+{
+  "name": "oversized_structure",
+  "description": "Structure whose canonical form exceeds 1 MiB. Python-only.",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "note": "In Python, the test constructs a large string or array."
+}

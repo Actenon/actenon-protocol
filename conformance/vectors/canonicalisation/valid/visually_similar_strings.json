@@ -1,0 +1,10 @@
+{
+  "name": "visually_similar_strings",
+  "description": "Visually similar but distinct strings. Latin A (U+0041) vs Cyrillic А (U+0410) vs Greek Α (U+0391).",
+  "input": {
+    "latin_a": "A",
+    "cyrillic_a": "А",
+    "greek_alpha": "Α"
+  },
+  "expected_canonical": "{\"cyrillic_a\":\"А\",\"greek_alpha\":\"Α\",\"latin_a\":\"A\"}"
+}

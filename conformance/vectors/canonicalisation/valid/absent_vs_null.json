@@ -1,0 +1,9 @@
+{
+  "name": "absent_vs_null",
+  "description": "Absent field vs null field produce different canonical bytes. This vector has a null field.",
+  "input": {
+    "present": 1,
+    "null_field": null
+  },
+  "expected_canonical": "{\"null_field\":null,\"present\":1}"
+}

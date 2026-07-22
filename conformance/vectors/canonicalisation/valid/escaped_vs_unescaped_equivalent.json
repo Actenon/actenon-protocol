@@ -1,0 +1,9 @@
+{
+  "name": "escaped_vs_unescaped_equivalent",
+  "description": "Strings that are equivalent after JSON unescaping produce the same canonical bytes.",
+  "input": {
+    "unicode_escape": "café",
+    "literal_unicode": "café"
+  },
+  "expected_canonical": "{\"literal_unicode\":\"café\",\"unicode_escape\":\"café\"}"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "array_reordering_differs",
+  "description": "Reversed array [3,2,1] produces different canonical bytes than [1,2,3].",
+  "input": [
+    3,
+    2,
+    1
+  ],
+  "expected_canonical": "[3,2,1]"
+}

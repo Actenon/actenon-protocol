@@ -1,0 +1,8 @@
+{
+  "name": "float_exponent",
+  "description": "Float in exponent notation. MUST be rejected.",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "input_json": "1.5e10",
+  "note": "Exponent notation is a float representation. Use integer or string instead."
+}

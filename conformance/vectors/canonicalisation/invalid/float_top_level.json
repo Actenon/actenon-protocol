@@ -1,7 +1,7 @@
 {
   "name": "float_top_level",
-  "description": "A top-level float value. MUST be rejected with CanonicalisationError.",
-  "input": 3.14,
+  "description": "A top-level float value. MUST be rejected.",
   "expected_error": "CanonicalisationError",
-  "expected_refusal_code": "CANONICALISATION_FAILURE"
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "input_json": "3.14"
 }

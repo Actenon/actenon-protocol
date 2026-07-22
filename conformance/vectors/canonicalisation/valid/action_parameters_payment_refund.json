@@ -1,6 +1,6 @@
 {
   "name": "action_parameters_payment_refund",
-  "description": "Realistic action parameters for a payment refund. Money represented as integer cents (NOT float).",
+  "description": "Realistic action parameters for a payment refund. Money as integer cents.",
   "input": {
     "action": "payment.refund",
     "target": "stripe",

@@ -1,7 +1,7 @@
 {
   "name": "float_in_array",
-  "description": "A float in an array. MUST be rejected with CanonicalisationError.",
-  "input": [1, 2, 3.14, 4],
+  "description": "A float in an array. MUST be rejected.",
   "expected_error": "CanonicalisationError",
-  "expected_refusal_code": "CANONICALISATION_FAILURE"
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "input_json": "[1, 2, 3.14, 4]"
 }

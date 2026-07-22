@@ -1,6 +1,14 @@
 {
   "name": "simple_object",
-  "description": "A simple object with mixed value types. Verifies key sorting and value serialisation.",
-  "input": { "z": 1, "a": "hello", "b": [true, null, 42] },
+  "description": "Simple object with mixed types. Verifies key sorting and value serialisation.",
+  "input": {
+    "z": 1,
+    "a": "hello",
+    "b": [
+      true,
+      null,
+      42
+    ]
+  },
   "expected_canonical": "{\"a\":\"hello\",\"b\":[true,null,42],\"z\":1}"
 }

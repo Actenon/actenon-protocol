@@ -1,0 +1,7 @@
+{
+  "name": "duplicate_keys",
+  "description": "Object with duplicate keys. JSON parsers use last-wins; duplicate-key detection is the parser's responsibility.",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "note": "The canonicaliser receives a dict/object that has already been constructed. Duplicate keys should be detected by the JSON parser."
+}

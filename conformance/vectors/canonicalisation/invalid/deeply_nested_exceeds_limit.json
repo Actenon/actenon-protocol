@@ -1,0 +1,7 @@
+{
+  "name": "deeply_nested_exceeds_limit",
+  "description": "Object nested 33 levels deep (exceeds the 32-level limit). Python-only.",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "note": "In Python, the test constructs a 33-level nested dict."
+}

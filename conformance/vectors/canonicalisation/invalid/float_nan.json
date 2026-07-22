@@ -1,0 +1,8 @@
+{
+  "name": "float_nan",
+  "description": "NaN value. MUST be rejected (not valid JSON per RFC 8259).",
+  "expected_error": "CanonicalisationError",
+  "expected_refusal_code": "CANONICALISATION_FAILURE",
+  "input_json": "NaN",
+  "note": "JSON does not support NaN. Parsers that accept it MUST still reject it in the canonicaliser."
+}

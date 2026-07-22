@@ -114,9 +114,46 @@ class TestCanonicalisationInvalid:
         # Those are tested separately in test_invalid_canonicalisation_python_only.
         if "input_python_only" in vector:
             pytest.skip(f"vector {vector_name!r} uses input_python_only; tested separately")
+        # Vectors that only have input_json (not "input") are tested via
+        # the conformance CLI and the test_float_* tests below.
+        if "input" not in vector:
+            pytest.skip(f"vector {vector_name!r} has no 'input' field (uses input_json or is Python-only)")
         input_value = vector["input"]
         with pytest.raises(CanonicalisationError):
             canonicalize_json(input_value)
+
+    @pytest.mark.parametrize(
+        "vector_name,vector",
+        _load_vectors("canonicalisation", "invalid"),
+        ids=[v[0] for v in _load_vectors("canonicalisation", "invalid")],
+    )
+    def test_invalid_canonicalisation_json_vectors(self, vector_name: str, vector: dict):
+        """Test invalid vectors that use input_json (floats, NaN, Infinity, etc.).
+
+        These vectors provide a raw JSON string that, when parsed, produces
+        a value containing floats or other rejected types.
+        """
+        input_json = vector.get("input_json")
+        if input_json is None:
+            pytest.skip(f"vector {vector_name!r} has no input_json field")
+        # Parse the JSON string. For NaN/Infinity, json.loads may fail
+        # (they're not valid JSON). In that case, we test the Python
+        # float directly.
+        try:
+            parsed = json.loads(input_json)
+        except json.JSONDecodeError:
+            # NaN, Infinity, -Infinity are not valid JSON. Test the
+            # Python float directly.
+            if input_json == "NaN":
+                parsed = float("nan")
+            elif input_json == "Infinity":
+                parsed = float("inf")
+            elif input_json == "-Infinity":
+                parsed = float("-inf")
+            else:
+                pytest.skip(f"vector {vector_name!r}: cannot parse {input_json!r}")
+        with pytest.raises((CanonicalisationError, TypeError)):
+            canonicalize_json(parsed)
 
     def test_invalid_canonicalisation_python_only(self):
         """Python-specific invalid inputs that have no JSON form.

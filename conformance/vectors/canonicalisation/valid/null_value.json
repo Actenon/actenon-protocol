@@ -1,0 +1,13 @@
+{
+  "name": "null_value",
+  "description": "Null value in object and array.",
+  "input": {
+    "n": null,
+    "arr": [
+      null,
+      1,
+      null
+    ]
+  },
+  "expected_canonical": "{\"arr\":[null,1,null],\"n\":null}"
+}
