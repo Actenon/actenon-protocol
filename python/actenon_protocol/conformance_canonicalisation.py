@@ -120,7 +120,9 @@ def run_conformance(verbose: bool = False) -> int:
                         print(f"  PASS  {name} (correctly rejected)")
                     passed += 1
                 except Exception as e:
-                    print(f"  FAIL  {name}: expected CanonicalisationError, got {type(e).__name__}: {e}")
+                    print(
+                        f"  FAIL  {name}: expected CanonicalisationError, got {type(e).__name__}: {e}"
+                    )
                     failed += 1
             else:
                 # Python-only vectors — skip in the CLI (tested in the pytest suite)
@@ -158,28 +160,29 @@ def run_conformance(verbose: bool = False) -> int:
         deep_value = {"n": deep_value}
     try:
         canonicalize_json(deep_value)
-        print(f"  FAIL  deeply_nested_exceeds_limit: expected error but got success")
+        print("  FAIL  deeply_nested_exceeds_limit: expected error but got success")
         failed += 1
     except (CanonicalisationError, ValueError, RecursionError):
         if verbose:
-            print(f"  PASS  deeply_nested_exceeds_limit (correctly rejected)")
+            print("  PASS  deeply_nested_exceeds_limit (correctly rejected)")
         passed += 1
 
     # ── Oversized structure (string > 1 MiB) ─────────────────────
     big_string = "x" * (1_048_577)
     try:
         from actenon_protocol.canonicalisation import canonicalize_bytes
+
         canonicalize_bytes(big_string)
-        print(f"  FAIL  oversized_structure: expected error but got success")
+        print("  FAIL  oversized_structure: expected error but got success")
         failed += 1
     except (CanonicalisationError, ValueError):
         if verbose:
-            print(f"  PASS  oversized_structure (correctly rejected)")
+            print("  PASS  oversized_structure (correctly rejected)")
         passed += 1
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Canonicalisation conformance: {passed} passed, {failed} failed, {skipped} skipped")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     return 0 if failed == 0 else 1
 
 

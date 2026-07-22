@@ -10,12 +10,13 @@ Loads the canonical catalogue from refusals/catalogue.v1.yaml and provides:
 
 from __future__ import annotations
 
-from actenon_protocol._compat import StrEnum
 from importlib import resources
 from pathlib import Path
 from typing import Final
 
 import yaml
+
+from actenon_protocol._compat import StrEnum
 
 
 def _load_catalogue() -> dict:
@@ -28,7 +29,11 @@ def _load_catalogue() -> dict:
     # Try the packaged data directory first (works for installed wheels and
     # editable installs where the data dir is present).
     try:
-        with resources.files("actenon_protocol.data").joinpath("catalogue.v1.yaml").open("r", encoding="utf-8") as f:
+        with (
+            resources.files("actenon_protocol.data")
+            .joinpath("catalogue.v1.yaml")
+            .open("r", encoding="utf-8") as f
+        ):
             return yaml.safe_load(f)
     except (FileNotFoundError, ModuleNotFoundError, AttributeError):
         pass
@@ -96,20 +101,15 @@ PUBLIC_SAFE_CODES: Final[frozenset[str]] = frozenset(
 # Codes that are only emitted under `trusted` or `local_debug` policy.
 # These appear in the `internal_code` field when the disclosure policy permits.
 DETAILED_CODES: Final[frozenset[str]] = frozenset(
-    code["internal_code"]
-    for code in _CATALOGUE["codes"]
-    if code["internal_code"] is not None
+    code["internal_code"] for code in _CATALOGUE["codes"] if code["internal_code"] is not None
 )
 
 # Map: alias (from existing actenon-kernel FailureCode enum) → canonical code.
-COMPATIBILITY_ALIASES: Final[dict[str, str]] = dict(
-    _CATALOGUE["compatibility_aliases"]
-)
+COMPATIBILITY_ALIASES: Final[dict[str, str]] = dict(_CATALOGUE["compatibility_aliases"])
 
 # Map: canonical internal_code → disclosed_code (public-safe umbrella).
 _INTERNAL_TO_DISCLOSED: Final[dict[str | None, str]] = {
-    code["internal_code"]: code["disclosed_code"]
-    for code in _CATALOGUE["codes"]
+    code["internal_code"]: code["disclosed_code"] for code in _CATALOGUE["codes"]
 }
 
 # Map: canonical code → retryable boolean.
@@ -162,9 +162,7 @@ def refusal_to_disclosed_code(internal_code: str | None, policy: DisclosurePolic
     return _INTERNAL_TO_DISCLOSED[internal_code]
 
 
-def refusal_to_internal_code(
-    internal_code: str | None, policy: DisclosurePolicy
-) -> str | None:
+def refusal_to_internal_code(internal_code: str | None, policy: DisclosurePolicy) -> str | None:
     """Return the internal_code to emit under the given policy.
 
     Under `public` policy, returns None (suppress detail).

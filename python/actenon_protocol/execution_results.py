@@ -117,10 +117,14 @@ class BrokeredExecutionResult:
         return BROKERED_FINALITY[self.state]
 
     def __post_init__(self) -> None:
-        if self.state in (
-            BrokeredExecutionState.SUCCEEDED,
-            BrokeredExecutionState.FAILED,
-        ) and not self.provider_execution_observed:
+        if (
+            self.state
+            in (
+                BrokeredExecutionState.SUCCEEDED,
+                BrokeredExecutionState.FAILED,
+            )
+            and not self.provider_execution_observed
+        ):
             raise ExecutionResultValidationError(
                 f"brokered state {self.state.value!r} requires "
                 "provider_execution_observed=True; refusing to "
@@ -130,9 +134,7 @@ class BrokeredExecutionResult:
             self.state == BrokeredExecutionState.OUTCOME_UNKNOWN
             and self.finality != FinalityStatus.NON_FINAL
         ):
-            raise ExecutionResultValidationError(
-                "brokered outcome_unknown must be non_final"
-            )
+            raise ExecutionResultValidationError("brokered outcome_unknown must be non_final")
 
 
 # ---------------------------------------------------------------------------

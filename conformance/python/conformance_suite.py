@@ -55,6 +55,7 @@ SCHEMAS_DIR = REPO_ROOT / "schemas"
 
 # ---------- helpers ----------
 
+
 def _load_vector(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
@@ -73,6 +74,7 @@ def _load_vectors(category: str, sub: str | None = None) -> list[tuple[str, dict
 
 # ---------- 1. Canonicalisation ----------
 
+
 class TestCanonicalisationValid:
     """Valid canonicalisation vectors — must produce the exact expected bytes."""
 
@@ -85,9 +87,7 @@ class TestCanonicalisationValid:
         input_value = vector["input"]
         expected = vector["expected_canonical"]
         actual = canonicalize_json(input_value)
-        assert actual == expected, (
-            f"vector {vector_name!r}: expected {expected!r}, got {actual!r}"
-        )
+        assert actual == expected, f"vector {vector_name!r}: expected {expected!r}, got {actual!r}"
 
     def test_returns_str_and_bytes_match(self):
         """canonicalize_json returns str; canonicalize_bytes returns UTF-8 of same."""
@@ -117,7 +117,9 @@ class TestCanonicalisationInvalid:
         # Vectors that only have input_json (not "input") are tested via
         # the conformance CLI and the test_float_* tests below.
         if "input" not in vector:
-            pytest.skip(f"vector {vector_name!r} has no 'input' field (uses input_json or is Python-only)")
+            pytest.skip(
+                f"vector {vector_name!r} has no 'input' field (uses input_json or is Python-only)"
+            )
         input_value = vector["input"]
         with pytest.raises(CanonicalisationError):
             canonicalize_json(input_value)
@@ -174,9 +176,11 @@ class TestCanonicalisationInvalid:
         # bytes (not a JSON type)
         with pytest.raises(CanonicalisationError):
             canonicalize_json(b"hello")
+
         # Custom object (not a JSON type)
         class Custom:
             pass
+
         with pytest.raises(CanonicalisationError):
             canonicalize_json(Custom())
 
@@ -198,6 +202,7 @@ class TestCanonicalisationInvalid:
     def test_unsupported_types_rejected(self):
         class Custom:
             pass
+
         with pytest.raises(CanonicalisationError):
             canonicalize_json(Custom())
 
@@ -230,6 +235,7 @@ class TestCanonicalisationUnicodeAndOrdering:
 
 # ---------- 2. Schema validation ----------
 
+
 class TestSchemaValidation:
     """Validate all artefact vectors against the JSON Schemas."""
 
@@ -259,15 +265,13 @@ class TestSchemaValidation:
     )
     def test_valid_proof(self, schema_registry, vector_name: str, vector: dict):
         from jsonschema import Draft202012Validator
+
         schema = schema_registry["schemas"]["urn:actenon:protocol:execution-proof:v1"]
-        validator = Draft202012Validator(
-            schema, registry=schema_registry["registry"]
-        )
+        validator = Draft202012Validator(schema, registry=schema_registry["registry"])
         artefact = vector["artefact"]
         errors = list(validator.iter_errors(artefact))
         assert not errors, (
-            f"vector {vector_name!r}: expected valid, got errors: "
-            f"{[e.message for e in errors]}"
+            f"vector {vector_name!r}: expected valid, got errors: {[e.message for e in errors]}"
         )
 
     @pytest.mark.parametrize(
@@ -277,10 +281,9 @@ class TestSchemaValidation:
     )
     def test_invalid_proof(self, schema_registry, vector_name: str, vector: dict):
         from jsonschema import Draft202012Validator
+
         schema = schema_registry["schemas"]["urn:actenon:protocol:execution-proof:v1"]
-        validator = Draft202012Validator(
-            schema, registry=schema_registry["registry"]
-        )
+        validator = Draft202012Validator(schema, registry=schema_registry["registry"])
         artefact = vector["artefact"]
         # JSON Schema enforces pattern + structure. The Identifier pattern
         # (^[a-z][a-z0-9_]*_[0-9a-f]{16,}$) does NOT enforce prefix-vs-alias
@@ -310,10 +313,9 @@ class TestSchemaValidation:
     )
     def test_valid_receipt(self, schema_registry, vector_name: str, vector: dict):
         from jsonschema import Draft202012Validator
+
         schema = schema_registry["schemas"]["urn:actenon:protocol:execution-receipt:v1"]
-        validator = Draft202012Validator(
-            schema, registry=schema_registry["registry"]
-        )
+        validator = Draft202012Validator(schema, registry=schema_registry["registry"])
         errors = list(validator.iter_errors(vector["artefact"]))
         assert not errors, f"vector {vector_name!r}: {[(e.message, e.json_path) for e in errors]}"
 
@@ -324,10 +326,9 @@ class TestSchemaValidation:
     )
     def test_invalid_receipt(self, schema_registry, vector_name: str, vector: dict):
         from jsonschema import Draft202012Validator
+
         schema = schema_registry["schemas"]["urn:actenon:protocol:execution-receipt:v1"]
-        validator = Draft202012Validator(
-            schema, registry=schema_registry["registry"]
-        )
+        validator = Draft202012Validator(schema, registry=schema_registry["registry"])
         errors = list(validator.iter_errors(vector["artefact"]))
         assert errors, f"vector {vector_name!r}: expected invalid"
 
@@ -338,10 +339,9 @@ class TestSchemaValidation:
     )
     def test_valid_refusal(self, schema_registry, vector_name: str, vector: dict):
         from jsonschema import Draft202012Validator
+
         schema = schema_registry["schemas"]["urn:actenon:protocol:execution-refusal:v1"]
-        validator = Draft202012Validator(
-            schema, registry=schema_registry["registry"]
-        )
+        validator = Draft202012Validator(schema, registry=schema_registry["registry"])
         errors = list(validator.iter_errors(vector["artefact"]))
         assert not errors, f"vector {vector_name!r}: {[(e.message, e.json_path) for e in errors]}"
 
@@ -355,10 +355,9 @@ class TestSchemaValidation:
         consistency, not pure schema violations. The schema check is a coarse
         filter; the disclosure-policy check is the fine filter (see TestRefusalDisclosure)."""
         from jsonschema import Draft202012Validator
+
         schema = schema_registry["schemas"]["urn:actenon:protocol:execution-refusal:v1"]
-        validator = Draft202012Validator(
-            schema, registry=schema_registry["registry"]
-        )
+        validator = Draft202012Validator(schema, registry=schema_registry["registry"])
         artefact = vector["artefact"]
         # We accept either schema-invalid OR pydantic-invalid (disclosure-policy)
         schema_errors = list(validator.iter_errors(artefact))
@@ -368,24 +367,34 @@ class TestSchemaValidation:
         except Exception:
             pydantic_error = True
         assert schema_errors or pydantic_error, (
-            f"vector {vector_name!r}: expected invalid (schema or pydantic), "
-            f"but both passed"
+            f"vector {vector_name!r}: expected invalid (schema or pydantic), but both passed"
         )
 
 
 # ---------- 3. Identifier validation ----------
 
-class TestIdentifiers:
 
+class TestIdentifiers:
     def test_all_canonical_prefixes_accepted(self):
         for prefix in PREFIXES:
             ident = generate_identifier(prefix)
             assert is_valid_identifier(ident), f"generated {ident!r} should be valid"
 
     def test_canonical_prefixes_complete(self):
-        assert frozenset({
-            "intent_", "authz_", "grant_", "proof_", "exec_", "rcpt_", "rful_",
-        }) == PREFIXES
+        assert (
+            frozenset(
+                {
+                    "intent_",
+                    "authz_",
+                    "grant_",
+                    "proof_",
+                    "exec_",
+                    "rcpt_",
+                    "rful_",
+                }
+            )
+            == PREFIXES
+        )
 
     def test_aliases_accepted(self):
         # act_ → intent_
@@ -436,15 +445,20 @@ class TestIdentifiers:
 
 # ---------- 4. Refusal catalogue ----------
 
-class TestRefusalCatalogue:
 
+class TestRefusalCatalogue:
     def test_twenty_canonical_codes(self):
         assert len(list(RefusalCode)) == 20
 
     def test_all_codes_have_catalogue_entry(self):
         """Every canonical code has an entry in the catalogue YAML."""
         # The catalogue is the source of truth; the enum must match it.
-        catalogue_codes = {entry["code"] for entry in __import__("actenon_protocol.refusal_codes", fromlist=["_CATALOGUE"])._CATALOGUE["codes"]}
+        catalogue_codes = {
+            entry["code"]
+            for entry in __import__(
+                "actenon_protocol.refusal_codes", fromlist=["_CATALOGUE"]
+            )._CATALOGUE["codes"]
+        }
         enum_codes = {code.value for code in RefusalCode}
         assert catalogue_codes == enum_codes, (
             f"catalogue and enum disagree. catalogue-only: {catalogue_codes - enum_codes}, "
@@ -459,7 +473,9 @@ class TestRefusalCatalogue:
         # Instead, every public-safe code is EITHER a detailed code OR
         # an umbrella code (internal_code=null in catalogue).
         catalogue = __import__("actenon_protocol.refusal_codes", fromlist=["_CATALOGUE"])._CATALOGUE
-        umbrella_codes = {entry["code"] for entry in catalogue["codes"] if entry["internal_code"] is None}
+        umbrella_codes = {
+            entry["code"] for entry in catalogue["codes"] if entry["internal_code"] is None
+        }
         for code in PUBLIC_SAFE_CODES:
             assert code in DETAILED_CODES or code in umbrella_codes, (
                 f"public-safe code {code!r} is neither detailed nor umbrella"
@@ -498,7 +514,6 @@ class TestRefusalCatalogue:
 
 
 class TestRefusalDisclosure:
-
     def test_signature_invalid_under_public_is_proof_invalid(self):
         # SIGNATURE_INVALID under PUBLIC policy → disclosed PROOF_INVALID, internal null
         disclosed = refusal_to_disclosed_code(
@@ -578,7 +593,6 @@ class TestRefusalDisclosure:
 
 
 class TestRefusalFactory:
-
     def test_from_internal_code_public(self):
         refusal = ExecutionRefusal.from_internal_code(
             refusal_id="rful_abcdef0123456789abcdef0123456789",
@@ -621,7 +635,6 @@ class TestRefusalFactory:
 
 
 class TestRefusalConformanceVectors:
-
     @pytest.mark.parametrize(
         "vector_name,vector",
         _load_vectors("refusal", "valid"),
@@ -645,8 +658,8 @@ class TestRefusalConformanceVectors:
 
 # ---------- 5. Execution modes ----------
 
-class TestExecutionModes:
 
+class TestExecutionModes:
     def test_both_modes_defined(self):
         assert ExecutionMode.BROKERED == "brokered"
         assert ExecutionMode.RESOURCE_OWNED == "resource_owned"
@@ -682,6 +695,7 @@ class TestExecutionModes:
 
 
 # ---------- 5b. Execution results (Prompt 9) ----------
+
 
 class TestExecutionResults:
     """Conformance for the discriminated ExecutionResult model.
@@ -829,8 +843,18 @@ class TestExecutionResults:
         assert r_dict["mode"] == "resource_owned"
 
         # brokered-only keys must not appear in resource_owned
-        brokered_only = {"receipt_received", "receipt_verified", "provider_evidence", "reconciliation_status"}
-        resource_only = {"resource_receipt_received", "resource_receipt_verified", "resource_receipt", "submission_reference"}
+        brokered_only = {
+            "receipt_received",
+            "receipt_verified",
+            "provider_evidence",
+            "reconciliation_status",
+        }
+        resource_only = {
+            "resource_receipt_received",
+            "resource_receipt_verified",
+            "resource_receipt",
+            "submission_reference",
+        }
         assert brokered_only.isdisjoint(r_dict.keys()), (
             f"resource_owned result carries brokered-only keys: {brokered_only & set(r_dict.keys())}"
         )
@@ -921,7 +945,9 @@ class TestExecutionResults:
                         executed_by=artefact["executed_by"],
                         attempt_id=artefact["attempt_id"],
                         occurred_at=artefact["occurred_at"],
-                        provider_execution_observed=artefact.get("provider_execution_observed", False),
+                        provider_execution_observed=artefact.get(
+                            "provider_execution_observed", False
+                        ),
                         resource_receipt_received=artefact.get("resource_receipt_received", False),
                         resource_receipt_verified=artefact.get("resource_receipt_verified", False),
                         resource_receipt=artefact.get("resource_receipt"),
@@ -953,7 +979,9 @@ class TestExecutionResults:
 
         for vector_name, vector in _load_vectors("execution-result", "valid"):
             errors = list(validator.iter_errors(vector["artefact"]))
-            assert not errors, f"valid vector {vector_name!r} rejected by schema: {[e.message for e in errors]}"
+            assert not errors, (
+                f"valid vector {vector_name!r} rejected by schema: {[e.message for e in errors]}"
+            )
 
         for vector_name, vector in _load_vectors("execution-result", "invalid"):
             errors = list(validator.iter_errors(vector["artefact"]))
@@ -962,8 +990,8 @@ class TestExecutionResults:
 
 # ---------- 6. Version constants ----------
 
-class TestVersionConstants:
 
+class TestVersionConstants:
     def test_protocol_version(self):
         assert PROTOCOL_VERSION == "1.1.0"
 
@@ -972,10 +1000,12 @@ class TestVersionConstants:
 
     def test_legacy_alias(self):
         from actenon_protocol import LEGACY_CANONICALISATION_PROFILE
+
         assert LEGACY_CANONICALISATION_PROFILE == "RFC8785-JCS"
 
     def test_rejected_label_is_not_accepted(self):
         from actenon_protocol.canonicalisation import is_accepted_profile
+
         assert not is_accepted_profile("actenon-jcs-sha256-v1")
         assert is_accepted_profile("ACTENON-JCS-STRICT-1")
         assert is_accepted_profile("RFC8785-JCS")
@@ -983,8 +1013,8 @@ class TestVersionConstants:
 
 # ---------- 7. Pydantic types ----------
 
-class TestPydanticTypes:
 
+class TestPydanticTypes:
     def test_execution_proof_round_trip(self):
         """A proof constructed from a valid vector should round-trip through JSON."""
         for _vector_name, vector in _load_vectors("proof", "valid"):
@@ -1015,8 +1045,8 @@ class TestPydanticTypes:
 
 # ---------- 8. ExecutionOutcome ----------
 
-class TestExecutionOutcome:
 
+class TestExecutionOutcome:
     def test_four_outcomes(self):
         assert len(list(ExecutionOutcome)) == 4
         assert ExecutionOutcome.EXECUTED == "EXECUTED"

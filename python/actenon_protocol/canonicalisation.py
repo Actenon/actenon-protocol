@@ -35,9 +35,7 @@ class CanonicalisationError(ValueError):
 
 def _validate_depth(value: Any, *, max_depth: int, current_depth: int = 0) -> None:
     if current_depth > max_depth:
-        raise CanonicalisationError(
-            f"JSON depth exceeds maximum {max_depth}"
-        )
+        raise CanonicalisationError(f"JSON depth exceeds maximum {max_depth}")
     if isinstance(value, list):
         for item in value:
             _validate_depth(item, max_depth=max_depth, current_depth=current_depth + 1)
@@ -74,7 +72,9 @@ def _canonicalize_json(value: Any) -> str:
     if isinstance(value, dict):
         # Reject non-string keys (RFC 8785 requires string keys)
         pieces = []
-        for key in sorted(value.keys(), key=lambda k: k.encode("utf-8") if isinstance(k, str) else b""):
+        for key in sorted(
+            value.keys(), key=lambda k: k.encode("utf-8") if isinstance(k, str) else b""
+        ):
             if not isinstance(key, str):
                 raise CanonicalisationError(
                     f"canonical JSON object keys must be strings, got {type(key).__name__}"

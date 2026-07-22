@@ -18,30 +18,34 @@ from typing import Final
 
 # Canonical prefixes for protocol v1.x.
 # Source of truth: identifiers/prefixes.v1.yaml
-PREFIXES: Final[frozenset[str]] = frozenset({
-    "intent_",
-    "authz_",
-    "grant_",
-    "proof_",
-    "exec_",
-    "rcpt_",
-    "rful_",
-})
+PREFIXES: Final[frozenset[str]] = frozenset(
+    {
+        "intent_",
+        "authz_",
+        "grant_",
+        "proof_",
+        "exec_",
+        "rcpt_",
+        "rful_",
+    }
+)
 
 # Aliases: identifiers with these prefixes are accepted as equivalent to
 # identifiers with the corresponding canonical prefix.
 ALIASES: Final[dict[str, str]] = {
-    "act_": "intent_",   # actenon-permit's Action.action_id, passed as intent_id
-    "pccb_": "proof_",   # defensive — no known wire emission, but kernel uses pccb_id internally
+    "act_": "intent_",  # actenon-permit's Action.action_id, passed as intent_id
+    "pccb_": "proof_",  # defensive — no known wire emission, but kernel uses pccb_id internally
 }
 
 # Forbidden prefixes: MUST NOT be used. Reserved for out-of-scope concerns.
-FORBIDDEN_PREFIXES: Final[frozenset[str]] = frozenset({
-    "tenant_",
-    "user_",
-    "policy_",
-    "approval_",
-})
+FORBIDDEN_PREFIXES: Final[frozenset[str]] = frozenset(
+    {
+        "tenant_",
+        "user_",
+        "policy_",
+        "approval_",
+    }
+)
 
 # Full identifier regex.
 # - prefix: lowercase letters/digits/underscore, ending in underscore
@@ -114,9 +118,7 @@ def generate_identifier(prefix: str, *, hex_length: int = RECOMMENDED_HEX_LENGTH
             f"Use one of: {sorted(PREFIXES)}"
         )
     if hex_length < MINIMUM_HEX_LENGTH:
-        raise ValueError(
-            f"hex_length {hex_length} is below minimum {MINIMUM_HEX_LENGTH}"
-        )
+        raise ValueError(f"hex_length {hex_length} is below minimum {MINIMUM_HEX_LENGTH}")
     # Generate ceil(hex_length / 2) random bytes.
     num_bytes = (hex_length + 1) // 2
     random_bytes = os.urandom(num_bytes)

@@ -58,6 +58,8 @@ include = ["actenon_protocol*"]
 testpaths = ["conformance/python"]
 addopts = "-v --tb=short"
 pythonpath = ["python"]
+# Conformance suite is named conformance_suite.py (not test_*.py) — collect it explicitly.
+python_files = ["test_*.py", "*_test.py", "conformance_suite.py"]
 
 [tool.ruff]
 line-length = 100
