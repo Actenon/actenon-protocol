@@ -89,7 +89,9 @@ def load_ecosystem() -> dict[str, Any]:
     with _DATA_FILE.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
-        raise ValueError(f"ecosystem.yaml: expected a mapping at the top level, got {type(data).__name__}")
+        raise ValueError(
+            f"ecosystem.yaml: expected a mapping at the top level, got {type(data).__name__}"
+        )
     if "repos" not in data:
         raise ValueError("ecosystem.yaml: missing required 'repos' key")
     return data
@@ -125,10 +127,7 @@ def _optional_line(opt: dict[str, Any]) -> str:
     summary = opt["summary"]
     licence = opt["licence"]
     note = opt["note"].replace("\n", " ").strip()
-    return (
-        f"**Optional:** [`{name}`]({url}) — {summary} "
-        f"({licence}). {note}"
-    )
+    return f"**Optional:** [`{name}`]({url}) — {summary} ({licence}). {note}"
 
 
 def render_table(here_repo: str) -> str:
@@ -203,14 +202,21 @@ def _parser() -> argparse.ArgumentParser:
         description="Render the ecosystem table into a README from ecosystem.yaml.",
     )
     grp = p.add_mutually_exclusive_group(required=True)
-    grp.add_argument("--check", action="store_true",
-                     help="exit 1 if the README block is out of sync with ecosystem.yaml")
-    grp.add_argument("--write", action="store_true",
-                     help="rewrite the block between the markers in the README")
+    grp.add_argument(
+        "--check",
+        action="store_true",
+        help="exit 1 if the README block is out of sync with ecosystem.yaml",
+    )
+    grp.add_argument(
+        "--write", action="store_true", help="rewrite the block between the markers in the README"
+    )
     p.add_argument("readme", type=Path, help="path to the README.md to check or update")
-    p.add_argument("--repo", required=True,
-                   help="name of the repo whose README is being rendered "
-                        "(marks that row with '← you are here'). REQUIRED.")
+    p.add_argument(
+        "--repo",
+        required=True,
+        help="name of the repo whose README is being rendered "
+        "(marks that row with '← you are here'). REQUIRED.",
+    )
     return p
 
 
