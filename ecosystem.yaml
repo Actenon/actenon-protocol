@@ -1,0 +1,28 @@
+version: 1
+repos:
+  - name: actenon-protocol
+    role: The neutral wire contract — what every artefact looks like on the wire
+    depends_on: []
+    pypi: actenon-protocol
+    npm: "@actenon/protocol-types"
+  - name: actenon-kernel
+    role: The open verifier — defines what a valid proof is
+    depends_on: [actenon-protocol]
+    pypi: actenon-kernel
+  - name: actenon-permit
+    role: The developer on-ramp and authority broker
+    depends_on: [actenon-kernel, actenon-protocol]
+    pypi: actenon-permit
+    npm: "@actenon/sdk"
+  - name: actenon-scan
+    role: The independent static-analysis scanner
+    depends_on: []
+    pypi: actenon-scan
+
+optional:
+  - name: actenon-cloud
+    url: https://github.com/Actenon/actenon-cloud
+    summary: a managed control plane
+    licence: source-available; see its LICENSE
+    note: Not required by any component above; every capability in this ecosystem
+          works without it.
