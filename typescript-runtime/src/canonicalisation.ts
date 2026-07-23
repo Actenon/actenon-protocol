@@ -198,57 +198,111 @@ export function canonicalize(value: unknown): Uint8Array {
  * Throws SyntaxError (from JSON.parse) on malformed JSON.
  */
 export function parseStrict(text: string): unknown {
-  scanNumberLiterals(text);
+  scanStrict(text);
   return JSON.parse(text);
 }
 
 /**
- * Scan raw JSON text for number literals that violate ACTENON-JCS-STRICT-1.
+ * Scan raw JSON text for violations of ACTENON-JCS-STRICT-1.
  *
  * This is a lexical pre-check that runs BEFORE JSON.parse. It walks the
- * text character by character, tracking whether we're inside a string
- * (so digits inside strings are not mistaken for number literals).
+ * text character by character, tracking:
+ *   - String boundaries (so digits inside strings are not mistaken for
+ *     number literals)
+ *   - Object nesting (a stack of Sets, one per object level, for
+ *     duplicate-key detection)
  *
  * For each number literal found:
  *   - If it contains '.', 'e', or 'E' → float → reject
  *   - If it's an integer outside ±(2^53 − 1) → unsafe → reject
  *
- * The tokenizer handles: strings (with escape sequences), objects,
- * arrays, booleans, null, and numbers. It does NOT need to fully parse
- * the JSON — just track string boundaries and find number tokens.
+ * For each object key found (a string followed by ':'):
+ *   - If the key has already been seen at the current object level →
+ *     duplicate key → reject
+ *
+ * The duplicate-key check is the parser's responsibility per
+ * ACTENON-JCS-STRICT-1 §4.12: "Duplicate-key detection is the
+ * responsibility of the JSON parser, not the canonicaliser."
+ * parseStrict IS the parser. JavaScript's JSON.parse uses last-wins
+ * (silently discarding earlier values), so without this check, a
+ * signed payload like {"amount":1,"amount":1000} would be accepted
+ * as {"amount":1000} — a classic signature-confusion vector where
+ * the signer sees one value and the verifier sees another from
+ * identical bytes.
  */
-function scanNumberLiterals(text: string): void {
+function scanStrict(text: string): void {
   const len = text.length;
   let i = 0;
-  let inString = false;
+
+  // Stack of Sets for duplicate-key detection. One Set per object nesting
+  // level. Arrays don't have keys, so they don't push a Set.
+  const keyStack: Set<string>[] = [];
 
   while (i < len) {
     const ch = text[i];
 
-    if (inString) {
-      if (ch === "\\") {
-        // Escape sequence — skip the next character
-        i += 2;
-        continue;
-      }
-      if (ch === '"') {
-        inString = false;
-      }
-      i++;
-      continue;
-    }
-
-    // Not in a string
+    // String: read the full string inline, then check if it's an object key
     if (ch === '"') {
-      inString = true;
+      i++; // skip opening quote
+      let strContent = "";
+      while (i < len) {
+        if (text[i] === "\\") {
+          // Keep the escape sequence as-is for key comparison.
+          // JSON.parse will decode it later; we compare on the raw
+          // (escaped) form, which is consistent because duplicate
+          // keys in the same object would use the same escaping.
+          strContent += text[i] + text[i + 1];
+          i += 2;
+          continue;
+        }
+        if (text[i] === '"') {
+          break;
+        }
+        strContent += text[i];
+        i++;
+      }
+      i++; // skip closing quote
+
+      // Peek ahead: skip whitespace, check if next char is ':'
+      let j = i;
+      while (j < len && (text[j] === " " || text[j] === "\t" || text[j] === "\n" || text[j] === "\r")) {
+        j++;
+      }
+      if (j < len && text[j] === ":") {
+        // This string is an object key. Check for duplicates at the
+        // current object level.
+        if (keyStack.length > 0) {
+          const currentKeys = keyStack[keyStack.length - 1];
+          if (currentKeys.has(strContent)) {
+            throw new CanonicalisationError(
+              `duplicate key ${JSON.stringify(strContent)} in object — ` +
+              `duplicate keys are prohibited by ACTENON-JCS-STRICT-1 §4.12`
+            );
+          }
+          currentKeys.add(strContent);
+        }
+      }
+      continue;
+    }
+
+    // Structural characters
+    if (ch === "{") {
+      keyStack.push(new Set());
+      i++;
+      continue;
+    }
+    if (ch === "}") {
+      keyStack.pop();
+      i++;
+      continue;
+    }
+    if (ch === "[" || ch === "]" || ch === ":" || ch === ",") {
       i++;
       continue;
     }
 
-    // Skip whitespace and structural characters
-    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" ||
-        ch === "{" || ch === "}" || ch === "[" || ch === "]" ||
-        ch === ":" || ch === ",") {
+    // Skip whitespace
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
       i++;
       continue;
     }
@@ -270,11 +324,9 @@ function scanNumberLiterals(text: string): void {
     // Number literal: starts with digit or minus
     if (ch === "-" || (ch >= "0" && ch <= "9")) {
       const start = i;
-      // Scan the full number literal
       if (ch === "-") i++;
       while (i < len && text[i] >= "0" && text[i] <= "9") i++;
 
-      // Check for fractional or exponent part
       let isFloat = false;
       if (i < len && text[i] === ".") {
         isFloat = true;
@@ -298,7 +350,6 @@ function scanNumberLiterals(text: string): void {
       }
 
       // Check integer range: must be within ±(2^53 − 1) = ±9007199254740991.
-      // Parse as BigInt to avoid precision loss in the check itself.
       const bigVal = BigInt(literal);
       const MAX_SAFE = BigInt(9007199254740991); // 2^53 - 1
       if (bigVal > MAX_SAFE || bigVal < -MAX_SAFE) {
