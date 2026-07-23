@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= $(PYTHON) -m pip
 
-.PHONY: install test conformance lint build clean types-python types-typescript openapi-validate
+.PHONY: install test conformance lint build clean types-python types-typescript openapi-validate ecosystem
 
 install:
 	$(PIP) install --upgrade pip
@@ -24,6 +24,9 @@ types-typescript:
 
 openapi-validate:
 	$(PYTHON) -c "import yaml; yaml.safe_load(open('openapi/components.yaml'))" && echo "OpenAPI YAML syntax OK"
+
+ecosystem:
+	python -m actenon_protocol.ecosystem --write README.md --repo actenon-protocol
 
 clean:
 	rm -rf build dist *.egg-info .pytest_cache .ruff_cache .mypy_cache
