@@ -10,7 +10,7 @@
 [![Zero dependencies](https://img.shields.io/badge/Dependencies-0-success.svg)](pyproject.toml)
 [![CI](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml)
 [![Code style: ruff](https://img.shields.io/badge/Code%20style-ruff-black.svg)](https://docs.astral.sh/ruff/)
-[![Spec: stable](https://img.shields.io/badge/Spec-stable-success.svg)](SPEC.md)
+[![Spec: stable](https://img.shields.io/badge/Spec-stable-success.svg)](protocol/)
 
 ---
 
@@ -61,11 +61,11 @@ The Protocol exists to give that question a **public, implementation-independent
 
 | Artefact | Purpose | Schema |
 |---|---|---|
-| **`ExecutionProof`** (PCCB) | Cryptographic proof that a specific action was authorized for a specific audience, tenant, subject, target, scope, and time window. Single-use. | [`schemas/execution-proof.schema.json`](schemas/execution-proof.schema.json) |
-| **`ExecutionReceipt`** | Durable record that a proof was verified and an action executed (or definitively refused before execution, in the refused-receipt path). | [`schemas/execution-receipt.schema.json`](schemas/execution-receipt.schema.json) |
-| **`ExecutionRefusal`** | Structured refusal with two-layer disclosure (public-safe `disclosed_code` + trusted-only `internal_code`). | [`schemas/execution-refusal.schema.json`](schemas/execution-refusal.schema.json) |
-| **`ExecutionResult`** | Discriminated union: `BrokeredExecutionResult \| ResourceOwnedExecutionResult` — disjoint field sets, no ambiguity. | [`schemas/execution-result.schema.json`](schemas/execution-result.schema.json) |
-| **`BoundaryManifest`** | Declarative mapping from HTTP endpoints to canonical Actenon actions, with parameter extraction rules. | [`schemas/boundary-manifest.schema.json`](schemas/boundary-manifest.schema.json) |
+| **`ExecutionProof`** (PCCB) | Cryptographic proof that a specific action was authorized for a specific audience, tenant, subject, target, scope, and time window. Single-use. | [`schemas/execution_proof.v1.json`](schemas/execution_proof.v1.json) |
+| **`ExecutionReceipt`** | Durable record that a proof was verified and an action executed (or definitively refused before execution, in the refused-receipt path). | [`schemas/execution_receipt.v1.json`](schemas/execution_receipt.v1.json) |
+| **`ExecutionRefusal`** | Structured refusal with two-layer disclosure (public-safe `disclosed_code` + trusted-only `internal_code`). | [`schemas/execution_refusal.v1.json`](schemas/execution_refusal.v1.json) |
+| **`ExecutionResult`** | Discriminated union: `BrokeredExecutionResult \| ResourceOwnedExecutionResult` — disjoint field sets, no ambiguity. | [`schemas/execution_result.v1.json`](schemas/execution_result.v1.json) |
+| **`BoundaryManifest`** | Declarative mapping from HTTP endpoints to canonical Actenon actions, with parameter extraction rules. | [`schemas/boundary_manifest.v1.json`](schemas/boundary_manifest.v1.json) |
 
 ## The two execution modes
 
