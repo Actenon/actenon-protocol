@@ -58,8 +58,12 @@ jobs:
         run: python scripts/check_readme_installs.py
 
       - name: Check README ecosystem table in sync with ecosystem.yaml
+        # On protocol's own CI we install from the local checkout so the
+        # renderer being tested is the one on this branch. Consumer repos
+        # (kernel, permit, scan) install from PyPI instead, which works
+        # once a release with the renderer is published.
         run: |
-          pip install actenon-protocol --quiet
+          pip install --quiet .
           python -m actenon_protocol.ecosystem --check README.md --repo actenon-protocol
 
       - name: Lint with ruff
