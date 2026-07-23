@@ -10,7 +10,7 @@ export {
   canonicalize,
   canonicalizeBytes,
   canonicalizeJson,
-  parseJson,
+  parseStrict,
   CanonicalisationError,
   MAX_CANONICAL_OUTPUT_BYTES,
   MAX_JSON_DEPTH,

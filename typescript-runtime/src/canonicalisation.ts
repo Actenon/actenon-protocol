@@ -169,55 +169,148 @@ export function canonicalize(value: unknown): Uint8Array {
 }
 
 /**
- * Parse a JSON string with duplicate-key detection.
+ * Parse a JSON string with ACTENON-JCS-STRICT-1 lexical rules.
  *
- * JavaScript's JSON.parse uses last-wins for duplicate keys, silently
- * discarding earlier values. ACTENON-JCS-STRICT-1 §4.12 prohibits
- * duplicate keys. This parser detects them and throws.
+ * JavaScript's JSON.parse has two problems for strict canonicalisation:
  *
- * Use this when parsing untrusted JSON that will be canonicalised. For
- * trusted input (constructed in code), the canonicaliser itself does not
- * need this — JS objects can't have duplicate keys.
+ *  1. It loses the float/integer distinction. JSON.parse("0.0") produces
+ *     the number 0, and Number.isInteger(0) is true — so the canonicaliser
+ *     can't reject 0.0 as a float. But the raw JSON text "0.0" clearly
+ *     contains a float literal (it has a decimal point).
+ *
+ *  2. It truncates integers > 2^53-1. JSON.parse("9007199254740993")
+ *     produces 9007199254740992 (the nearest representable double). The
+ *     canonicaliser sees the wrong value and produces wrong bytes.
+ *
+ * parseStrict solves both by scanning the RAW TEXT before JSON.parse:
+ *   - Any number literal containing '.', 'e', or 'E' → float → reject
+ *   - Any integer literal outside ±(2^53 − 1) → unsafe integer → reject
+ *
+ * The scan uses a proper JSON tokenizer that understands string
+ * boundaries — a naive regex would match digits inside string values
+ * like {"note":"costs 50.0 dollars"}, which must be ACCEPTED.
+ *
+ * After the scan, JSON.parse is called on the (validated) text. The
+ * parsed value is returned as-is — it's now guaranteed to contain only
+ * safe integers, strings, booleans, null, arrays, and objects.
+ *
+ * Throws CanonicalisationError on float literals or unsafe integers.
+ * Throws SyntaxError (from JSON.parse) on malformed JSON.
  */
-export function parseJson(input: string): unknown {
-  // Use a reviver that tracks seen keys per object. JSON.parse calls the
-  // reviver bottom-up, so we need to detect duplicates during parsing
-  // rather than after. We do this by parsing with a reviver that checks
-  // for duplicate keys at each level.
-  //
-  // Unfortunately, JSON.parse's reviver doesn't give us enough context
-  // to detect duplicates reliably (it's called once per key-value pair,
-  // and we'd need to track state per nesting level). Instead, we use a
-  // small hand-rolled parser for duplicate detection.
-  //
-  // For performance, we first parse normally (fast path), then re-parse
-  // with a reviver only if the fast parse succeeds. The reviver approach
-  // actually CAN'T detect duplicates because JSON.parse collapses them
-  // before the reviver runs. So we use a regex-based pre-check.
+export function parseStrict(text: string): unknown {
+  scanNumberLiterals(text);
+  return JSON.parse(text);
+}
 
-  // Count keys at each nesting level using a regex. This is not a full
-  // parser but catches the common case of literal duplicate keys.
-  // A more robust approach would use a streaming JSON parser.
-  const seen = new Map<number, Set<string>>();
-  let depth = 0;
-  const keyRegex = /"((?:[^"\\]|\\.)*)"\s*:/g;
-  let match: RegExpExecArray | null;
-  while ((match = keyRegex.exec(input)) !== null) {
-    // Count nesting depth up to this point
-    const prefix = input.slice(0, match.index);
-    depth = (prefix.match(/{/g) || []).length - (prefix.match(/}/g) || []).length;
-    const key = match[1];
-    let level = seen.get(depth);
-    if (!level) {
-      level = new Set();
-      seen.set(depth, level);
+/**
+ * Scan raw JSON text for number literals that violate ACTENON-JCS-STRICT-1.
+ *
+ * This is a lexical pre-check that runs BEFORE JSON.parse. It walks the
+ * text character by character, tracking whether we're inside a string
+ * (so digits inside strings are not mistaken for number literals).
+ *
+ * For each number literal found:
+ *   - If it contains '.', 'e', or 'E' → float → reject
+ *   - If it's an integer outside ±(2^53 − 1) → unsafe → reject
+ *
+ * The tokenizer handles: strings (with escape sequences), objects,
+ * arrays, booleans, null, and numbers. It does NOT need to fully parse
+ * the JSON — just track string boundaries and find number tokens.
+ */
+function scanNumberLiterals(text: string): void {
+  const len = text.length;
+  let i = 0;
+  let inString = false;
+
+  while (i < len) {
+    const ch = text[i];
+
+    if (inString) {
+      if (ch === "\\") {
+        // Escape sequence — skip the next character
+        i += 2;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
     }
-    if (level.has(key)) {
-      throw new CanonicalisationError(
-        `duplicate key ${JSON.stringify(key)} at depth ${depth}`
-      );
+
+    // Not in a string
+    if (ch === '"') {
+      inString = true;
+      i++;
+      continue;
     }
-    level.add(key);
+
+    // Skip whitespace and structural characters
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" ||
+        ch === "{" || ch === "}" || ch === "[" || ch === "]" ||
+        ch === ":" || ch === ",") {
+      i++;
+      continue;
+    }
+
+    // Skip literals: true, false, null
+    if (ch === "t" && text.slice(i, i + 4) === "true") {
+      i += 4;
+      continue;
+    }
+    if (ch === "f" && text.slice(i, i + 5) === "false") {
+      i += 5;
+      continue;
+    }
+    if (ch === "n" && text.slice(i, i + 4) === "null") {
+      i += 4;
+      continue;
+    }
+
+    // Number literal: starts with digit or minus
+    if (ch === "-" || (ch >= "0" && ch <= "9")) {
+      const start = i;
+      // Scan the full number literal
+      if (ch === "-") i++;
+      while (i < len && text[i] >= "0" && text[i] <= "9") i++;
+
+      // Check for fractional or exponent part
+      let isFloat = false;
+      if (i < len && text[i] === ".") {
+        isFloat = true;
+        i++;
+        while (i < len && text[i] >= "0" && text[i] <= "9") i++;
+      }
+      if (i < len && (text[i] === "e" || text[i] === "E")) {
+        isFloat = true;
+        i++;
+        if (i < len && (text[i] === "+" || text[i] === "-")) i++;
+        while (i < len && text[i] >= "0" && text[i] <= "9") i++;
+      }
+
+      const literal = text.slice(start, i);
+
+      if (isFloat) {
+        throw new CanonicalisationError(
+          "floating-point values are not supported in ACTENON-JCS-STRICT-1; " +
+          "use integer cents or string-encoded decimals instead"
+        );
+      }
+
+      // Check integer range: must be within ±(2^53 − 1) = ±9007199254740991.
+      // Parse as BigInt to avoid precision loss in the check itself.
+      const bigVal = BigInt(literal);
+      const MAX_SAFE = BigInt(9007199254740991); // 2^53 - 1
+      if (bigVal > MAX_SAFE || bigVal < -MAX_SAFE) {
+        throw new CanonicalisationError(
+          `integer ${literal} exceeds the safe integer range ±(2^53 − 1) ` +
+          `for ACTENON-JCS-STRICT-1; pass as BigInt or encode as a string`
+        );
+      }
+      continue;
+    }
+
+    // Unexpected character — let JSON.parse produce the error
+    i++;
   }
-  return JSON.parse(input);
 }
