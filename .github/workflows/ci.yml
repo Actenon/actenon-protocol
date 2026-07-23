@@ -51,6 +51,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff>=0.8
 
+      - name: Check generated Python badge
+        run: python scripts/sync_badges.py --check
+
+      - name: Check README registry installs
+        run: python scripts/check_readme_installs.py
+
       - name: Lint with ruff
         run: ruff check python/ conformance/python/
 
