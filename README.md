@@ -4,7 +4,9 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Version: v1.1.0](https://img.shields.io/badge/Version-v1.1.0-blue.svg)](CHANGELOG.md)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
+<!-- PYTHON-BADGE:START -->
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+<!-- PYTHON-BADGE:END -->
 [![PyPI: actenon-protocol](https://img.shields.io/pypi/v/actenon-protocol?label=PyPI)](https://pypi.org/project/actenon-protocol/)
 [![npm: @actenon/protocol-types](https://img.shields.io/npm/v/@actenon/protocol-types?label=npm)](https://www.npmjs.com/package/@actenon/protocol-types)
 [![Zero dependencies](https://img.shields.io/badge/Dependencies-0-success.svg)](pyproject.toml)
