@@ -1,0 +1,7 @@
+{
+  "name": "mode_must_be_explicit",
+  "description": "Mode must not be inferred — missing mode is invalid.",
+  "input": {},
+  "expected_validation": "invalid",
+  "expected_error": "MISSING_EXECUTION_MODE"
+}

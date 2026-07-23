@@ -1,6 +1,6 @@
 {
-  "name": "retryable_mismatch",
-  "description": "Retryable flag contradicts the code's catalogue entry.",
+  "name": "outcome_unknown",
+  "description": "Execution outcome could not be determined.",
   "artefact": {
     "protocol_version": "1.0.0",
     "refusal_id": "rful_abcdef0123456789abcdef0123456789",
@@ -8,11 +8,10 @@
     "execution_attempt_id": "exec_abcdef0123456789abcdef0123456789",
     "execution_mode": "brokered",
     "refused_at": "2026-07-21T12:00:03Z",
-    "disclosed_code": "PROOF_INVALID",
-    "internal_code": "SIGNATURE_INVALID",
+    "disclosed_code": "OUTCOME_UNKNOWN",
+    "internal_code": "OUTCOME_UNKNOWN",
     "retryable": true,
-    "message": "Signature verification failed."
+    "message": "Execution outcome could not be determined."
   },
-  "expected_validation": "invalid",
-  "expected_refusal_code": "RETRYABILITY_MISMATCH"
+  "expected_validation": "valid"
 }

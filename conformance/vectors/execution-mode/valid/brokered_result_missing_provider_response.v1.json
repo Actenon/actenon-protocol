@@ -1,0 +1,12 @@
+{
+  "name": "brokered_result_missing_provider_response",
+  "description": "Brokered succeeded result without provider_response_summary is invalid.",
+  "input": {
+    "mode": "brokered",
+    "result": {
+      "outcome": "EXECUTED"
+    }
+  },
+  "expected_validation": "invalid",
+  "expected_error": "BROKERED_SUCCEEDED_REQUIRES_OBSERVATION"
+}

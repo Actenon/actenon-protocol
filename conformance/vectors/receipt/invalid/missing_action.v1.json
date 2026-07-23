@@ -1,6 +1,6 @@
 {
-  "name": "missing_outcome",
-  "description": "Receipt missing outcome.",
+  "name": "missing_action",
+  "description": "Receipt missing action.",
   "artefact": {
     "protocol_version": "1.0.0",
     "receipt_id": "rcpt_abcdef0123456789abcdef0123456789",
@@ -8,16 +8,10 @@
     "execution_attempt_id": "exec_abcdef0123456789abcdef0123456789",
     "execution_mode": "brokered",
     "executed_at": "2026-07-21T12:00:05Z",
+    "outcome": "EXECUTED",
     "target": {
       "type": "payment-provider",
       "id": "stripe"
-    },
-    "action": {
-      "type": "payment.refund",
-      "parameters": {
-        "invoice_id": "inv_abc123",
-        "amount_cents": 2500
-      }
     },
     "provider_response_summary": {
       "status": "succeeded",

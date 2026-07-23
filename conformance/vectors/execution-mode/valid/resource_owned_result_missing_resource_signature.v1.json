@@ -1,0 +1,12 @@
+{
+  "name": "resource_owned_result_missing_resource_signature",
+  "description": "Resource-owned succeeded result without resource_signature is invalid.",
+  "input": {
+    "mode": "resource_owned",
+    "result": {
+      "outcome": "SUCCEEDED"
+    }
+  },
+  "expected_validation": "invalid",
+  "expected_error": "RESOURCE_OWNED_SUCCEEDED_REQUIRES_SIGNATURE"
+}

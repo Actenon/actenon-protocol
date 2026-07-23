@@ -1,6 +1,6 @@
 {
-  "name": "with_evidence_links",
-  "description": "Proof with transparency log + counter-signature evidence.",
+  "name": "missing_action_type",
+  "description": "Proof whose action has no type field.",
   "artefact": {
     "protocol_version": "1.0.0",
     "proof_id": "proof_a1b2c3d4e5f6071829384756abcdef01",
@@ -23,11 +23,8 @@
       "id": "actenon-cloud-gateway"
     },
     "action": {
-      "type": "payment.refund",
       "parameters": {
-        "invoice_id": "inv_abc123",
-        "amount_cents": 2500,
-        "currency": "GBP"
+        "foo": "bar"
       }
     },
     "target": {
@@ -48,27 +45,8 @@
     },
     "execution_mode": "brokered",
     "grant_id": "grant_9f3c1a175e9b4d80a1b2c3d4e5f60718",
-    "authority_decision_id": "authz_1234567890abcdef1234567890abcdef",
-    "evidence_links": [
-      {
-        "type": "transparency_log",
-        "link_type": "external_url",
-        "target_ref": {
-          "url": "https://log.actenon.dev/v1/entries/123"
-        }
-      },
-      {
-        "type": "counter_signature",
-        "link_type": "inline",
-        "target_ref": {
-          "inline_payload": {
-            "signer": "actenon-cloud",
-            "key_id": "cs-key-1",
-            "signature": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-          }
-        }
-      }
-    ]
+    "authority_decision_id": "authz_1234567890abcdef1234567890abcdef"
   },
-  "expected_validation": "valid"
+  "expected_validation": "invalid",
+  "expected_refusal_code": "SCHEMA_INVALID"
 }

@@ -1,0 +1,8 @@
+{
+  "name": "brokered_mode_explicit",
+  "description": "Brokered mode is explicitly set on the proof.",
+  "input": {
+    "execution_mode": "brokered"
+  },
+  "expected_mode": "brokered"
+}

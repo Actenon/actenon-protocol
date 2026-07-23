@@ -1,0 +1,8 @@
+{
+  "name": "resource_owned_mode_explicit",
+  "description": "Resource-owned mode is explicitly set on the proof.",
+  "input": {
+    "execution_mode": "resource_owned"
+  },
+  "expected_mode": "resource_owned"
+}

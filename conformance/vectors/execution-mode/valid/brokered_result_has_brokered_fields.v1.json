@@ -1,0 +1,13 @@
+{
+  "name": "brokered_result_has_brokered_fields",
+  "description": "Brokered result must have brokered-only fields.",
+  "input": {
+    "mode": "brokered",
+    "result": {
+      "provider_response_summary": {
+        "status": "succeeded"
+      }
+    }
+  },
+  "expected_validation": "valid"
+}

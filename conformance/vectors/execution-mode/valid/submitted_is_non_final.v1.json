@@ -1,0 +1,11 @@
+{
+  "name": "submitted_is_non_final",
+  "description": "submitted state must be non-final.",
+  "input": {
+    "mode": "resource_owned",
+    "result": {
+      "outcome": "SUBMITTED"
+    }
+  },
+  "expected_finality": "non_final"
+}

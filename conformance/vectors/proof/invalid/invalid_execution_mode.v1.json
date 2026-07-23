@@ -1,25 +1,55 @@
 {
   "name": "invalid_execution_mode",
-  "description": "ExecutionProof with an invalid execution_mode value. MUST fail schema validation.",
+  "description": "Proof with an invalid execution_mode value.",
   "artefact": {
     "protocol_version": "1.0.0",
     "proof_id": "proof_a1b2c3d4e5f6071829384756abcdef01",
     "issuer": {
-      "issuer_id": "x",
+      "issuer_id": "actenon-permit-local",
       "issuer_type": "authority_broker",
-      "key_discovery": { "method": "embedded", "embedded_key": { "algorithm": "EdDSA", "public_key": "x", "key_id": "k" } }
+      "key_discovery": {
+        "method": "embedded",
+        "embedded_key": {
+          "algorithm": "EdDSA",
+          "public_key": "11qYCYQ4eBJ7eQkLZqW8FQqK4vBd8c6Y4vBd8c6Y4vB",
+          "key_id": "ed25519-a1b2c3d4e5f6"
+        }
+      },
+      "trust_status": "active"
     },
     "subject": "agent:refund-bot-001",
-    "audience": { "type": "service", "id": "x" },
-    "action": { "type": "payment.refund", "parameters": {} },
-    "target": { "type": "payment-provider", "id": "stripe" },
+    "audience": {
+      "type": "service",
+      "id": "actenon-cloud-gateway"
+    },
+    "action": {
+      "type": "payment.refund",
+      "parameters": {
+        "invoice_id": "inv_abc123",
+        "amount_cents": 2500,
+        "currency": "GBP"
+      }
+    },
+    "target": {
+      "type": "payment-provider",
+      "id": "stripe"
+    },
     "issued_at": "2026-07-21T12:00:00Z",
     "expires_at": "2026-07-21T12:15:00Z",
     "canonicalisation": "ACTENON-JCS-STRICT-1",
-    "action_hash": { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
-    "signature": { "algorithm": "EdDSA", "key_id": "k", "value": "x" },
-    "execution_mode": "hybrid"
+    "action_hash": {
+      "algorithm": "sha256",
+      "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "signature": {
+      "algorithm": "EdDSA",
+      "key_id": "ed25519-a1b2c3d4e5f6",
+      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "execution_mode": "hybrid",
+    "grant_id": "grant_9f3c1a175e9b4d80a1b2c3d4e5f60718",
+    "authority_decision_id": "authz_1234567890abcdef1234567890abcdef"
   },
   "expected_validation": "invalid",
-  "expected_error": "invalid_enum_value"
+  "expected_refusal_code": "SCHEMA_INVALID"
 }

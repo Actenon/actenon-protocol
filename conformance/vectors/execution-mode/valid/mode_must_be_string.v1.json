@@ -1,0 +1,9 @@
+{
+  "name": "mode_must_be_string",
+  "description": "Mode must be a string, not a number.",
+  "input": {
+    "execution_mode": 1
+  },
+  "expected_validation": "invalid",
+  "expected_error": "SCHEMA_INVALID"
+}

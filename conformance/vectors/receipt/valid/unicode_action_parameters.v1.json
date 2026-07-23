@@ -1,12 +1,12 @@
 {
-  "name": "executed_resource_owned",
-  "description": "Successful resource-owned execution.",
+  "name": "unicode_action_parameters",
+  "description": "Receipt with Unicode in action parameters.",
   "artefact": {
     "protocol_version": "1.0.0",
     "receipt_id": "rcpt_abcdef0123456789abcdef0123456789",
     "proof_id": "proof_a1b2c3d4e5f6071829384756abcdef01",
     "execution_attempt_id": "exec_abcdef0123456789abcdef0123456789",
-    "execution_mode": "resource_owned",
+    "execution_mode": "brokered",
     "executed_at": "2026-07-21T12:00:05Z",
     "outcome": "EXECUTED",
     "target": {
@@ -14,20 +14,15 @@
       "id": "stripe"
     },
     "action": {
-      "type": "payment.refund",
+      "type": "issue.create",
       "parameters": {
-        "invoice_id": "inv_abc123",
-        "amount_cents": 2500
+        "title": "修复支付问题",
+        "body": "用户报告退款失败"
       }
     },
     "provider_response_summary": {
       "status": "succeeded",
       "provider_ref": "re_abc123"
-    },
-    "resource_signature": {
-      "algorithm": "EdDSA",
-      "key_id": "res-key-1",
-      "value": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
     }
   },
   "expected_validation": "valid"

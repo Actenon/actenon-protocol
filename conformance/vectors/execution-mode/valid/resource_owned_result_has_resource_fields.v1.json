@@ -1,0 +1,14 @@
+{
+  "name": "resource_owned_result_has_resource_fields",
+  "description": "Resource-owned result must have resource-only fields.",
+  "input": {
+    "mode": "resource_owned",
+    "result": {
+      "resource_signature": {
+        "algorithm": "EdDSA",
+        "value": "x"
+      }
+    }
+  },
+  "expected_validation": "valid"
+}

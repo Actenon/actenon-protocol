@@ -1,6 +1,6 @@
 {
-  "name": "with_evidence_links",
-  "description": "Proof with transparency log + counter-signature evidence.",
+  "name": "with_approval_artefact",
+  "description": "Proof with a custom_claims field carrying approval metadata.",
   "artefact": {
     "protocol_version": "1.0.0",
     "proof_id": "proof_a1b2c3d4e5f6071829384756abcdef01",
@@ -49,26 +49,12 @@
     "execution_mode": "brokered",
     "grant_id": "grant_9f3c1a175e9b4d80a1b2c3d4e5f60718",
     "authority_decision_id": "authz_1234567890abcdef1234567890abcdef",
-    "evidence_links": [
-      {
-        "type": "transparency_log",
-        "link_type": "external_url",
-        "target_ref": {
-          "url": "https://log.actenon.dev/v1/entries/123"
-        }
-      },
-      {
-        "type": "counter_signature",
-        "link_type": "inline",
-        "target_ref": {
-          "inline_payload": {
-            "signer": "actenon-cloud",
-            "key_id": "cs-key-1",
-            "signature": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-          }
-        }
-      }
-    ]
+    "custom_claims": {
+      "approval_id": "appr_abcdef0123456789",
+      "approved_by": "human:finance-lead",
+      "approved_at": "2026-07-21T11:59:00Z",
+      "approval_scope": "payment.refund > 20 USD"
+    }
   },
   "expected_validation": "valid"
 }

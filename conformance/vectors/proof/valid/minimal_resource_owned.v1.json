@@ -1,20 +1,27 @@
 {
   "name": "minimal_resource_owned",
-  "description": "Minimal valid ExecutionProof in resource_owned mode. Issuer is the resource owner itself (self-issued proof).",
+  "description": "Minimal valid resource_owned proof.",
   "artefact": {
     "protocol_version": "1.0.0",
-    "proof_id": "proof_b1b2c3d4e5f6071829384756abcdef02",
+    "proof_id": "proof_a1b2c3d4e5f6071829384756abcdef01",
     "issuer": {
-      "issuer_id": "stripe-payment-provider",
+      "issuer_id": "resource:payments-api",
       "issuer_type": "resource_owner",
       "key_discovery": {
-        "method": "well_known",
-        "well_known_url": "https://api.stripe.com/.well-known/actenon-issuer/stripe-payment-provider"
+        "method": "embedded",
+        "embedded_key": {
+          "algorithm": "EdDSA",
+          "public_key": "11qYCYQ4eBJ7eQkLZqW8FQqK4vBd8c6Y4vBd8c6Y4vB",
+          "key_id": "ed25519-a1b2c3d4e5f6"
+        }
       },
       "trust_status": "active"
     },
     "subject": "agent:refund-bot-001",
-    "audience": { "type": "service", "id": "stripe-refund-api" },
+    "audience": {
+      "type": "service",
+      "id": "actenon-cloud-gateway"
+    },
     "action": {
       "type": "payment.refund",
       "parameters": {
@@ -23,9 +30,11 @@
         "currency": "GBP"
       }
     },
-    "target": { "type": "payment-provider", "id": "stripe" },
+    "target": {
+      "type": "payment-provider",
+      "id": "stripe"
+    },
     "issued_at": "2026-07-21T12:00:00Z",
-    "not_before": "2026-07-21T12:00:30Z",
     "expires_at": "2026-07-21T12:15:00Z",
     "canonicalisation": "ACTENON-JCS-STRICT-1",
     "action_hash": {
@@ -34,10 +43,12 @@
     },
     "signature": {
       "algorithm": "EdDSA",
-      "key_id": "ed25519-b1b2c3d4e5f6",
-      "value": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+      "key_id": "ed25519-a1b2c3d4e5f6",
+      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     },
-    "execution_mode": "resource_owned"
+    "execution_mode": "resource_owned",
+    "grant_id": "grant_9f3c1a175e9b4d80a1b2c3d4e5f60718",
+    "authority_decision_id": "authz_1234567890abcdef1234567890abcdef"
   },
   "expected_validation": "valid"
 }

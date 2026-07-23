@@ -1,0 +1,15 @@
+{
+  "name": "succeeded_is_final",
+  "description": "succeeded state must be final.",
+  "input": {
+    "mode": "resource_owned",
+    "result": {
+      "outcome": "SUCCEEDED",
+      "resource_signature": {
+        "algorithm": "EdDSA",
+        "value": "x"
+      }
+    }
+  },
+  "expected_finality": "final"
+}
