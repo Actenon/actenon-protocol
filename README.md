@@ -11,7 +11,7 @@
 [![npm: @actenon/protocol-types](https://img.shields.io/npm/v/@actenon/protocol-types?label=npm)](https://www.npmjs.com/package/@actenon/protocol-types)
 [![Zero dependencies](https://img.shields.io/badge/Dependencies-0-success.svg)](pyproject.toml)
 [![CI](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml)
-[![Claims: machine-verified](https://img.shields.io/badge/claims-machine--verified-2ea44f.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/verify-claims.yml)
+[![claims: machine-verified](https://img.shields.io/github/actions/workflow/status/Actenon/actenon-protocol/verify-claims.yml?branch=main&label=claims%3A%20machine-verified)](https://github.com/Actenon/actenon-protocol/actions/workflows/verify-claims.yml)
 [![Code style: ruff](https://img.shields.io/badge/Code%20style-ruff-black.svg)](https://docs.astral.sh/ruff/)
 [![Spec: stable](https://img.shields.io/badge/Spec-stable-success.svg)](protocol/)
 
