@@ -53,3 +53,26 @@ satisfies, because the *old* tag exists. The gate could not catch
 **Related discovery.** `VERSIONING.md` declared "Protocol version: 1.0.0"
 while `version.py` declared `1.1.0` — the stale doc line predated this run and
 likely fed the confusion. Corrected to `1.1.0`.
+
+## FINDING: publishing 1.3.0 exposed downstream reliance on removed transitive deps (2026-07-24 run)
+
+**Severity:** NOTE — downstream CI breakage, fixed same day; no runtime impact.
+
+**What happened.** PR #7's zero-dependency restructure merged to `main` on
+2026-07-23 but was first *published* with 1.3.0. The moment 1.3.0 hit PyPI,
+consumer CI that relied on the old transitive closure broke:
+
+* `actenon-scan`: every `test` and `drift-gate` job (`ModuleNotFoundError:
+  pydantic` in `tests/test_protocol_drift.py`) and the README-claims job
+  (`ModuleNotFoundError: yaml` in the ecosystem-table check). Fixed in
+  actenon-scan#9 by declaring `actenon-protocol[types]` / `[yaml]`.
+* `actenon-permit`: the same ecosystem-check pattern survived only because a
+  stale package index still served 1.2.0. Fixed preemptively in
+  actenon-permit#16.
+* `actenon-kernel`: unaffected — every job that runs the ecosystem check also
+  installs the kernel, which depends on pyyaml directly.
+
+**Lesson.** Removing transitive dependencies is a compatible change for the
+package itself but a breaking change for consumers who never declared what
+they actually import. The fix direction is consumers declaring their real
+dependencies (extras), not the protocol restoring fat defaults.
