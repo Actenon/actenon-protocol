@@ -150,6 +150,19 @@ pip install actenon-protocol
 npm install @actenon/protocol-types
 ```
 
+### Optional extras
+
+The runtime package has **zero dependencies** — only the Python standard library.
+Pydantic types, YAML loading, and conformance tooling are gated behind optional
+extras so adopters who only need the wire contract pay no dependency cost:
+
+```bash
+pip install "actenon-protocol[types]"        # Pydantic models for the protocol shapes
+pip install "actenon-protocol[yaml]"         # Direct YAML loading of the refusal catalogue
+pip install "actenon-protocol[conformance]"  # jsonschema + rfc8785 for the conformance runner
+pip install "actenon-protocol[all]"          # all of the above
+```
+
 ## Use
 
 ```python
