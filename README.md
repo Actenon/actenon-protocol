@@ -11,8 +11,29 @@
 [![npm: @actenon/protocol-types](https://img.shields.io/npm/v/@actenon/protocol-types?label=npm)](https://www.npmjs.com/package/@actenon/protocol-types)
 [![Zero dependencies](https://img.shields.io/badge/Dependencies-0-success.svg)](pyproject.toml)
 [![CI](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/ci.yml)
+[![Claims: machine-verified](https://img.shields.io/badge/claims-machine--verified-2ea44f.svg)](https://github.com/Actenon/actenon-protocol/actions/workflows/verify-claims.yml)
 [![Code style: ruff](https://img.shields.io/badge/Code%20style-ruff-black.svg)](https://docs.astral.sh/ruff/)
 [![Spec: stable](https://img.shields.io/badge/Spec-stable-success.svg)](protocol/)
+
+### Every claim above is machine-verified
+
+The `claims: machine-verified` badge links to a CI gate
+([`verify-claims.yml`](.github/workflows/verify-claims.yml)) that fails on
+every PR, push to `main`, and once a day if any factual claim this README
+makes about the package stops being true:
+
+- **Zero runtime dependencies** — read from `pyproject.toml`, not prose.
+- **The vector count** — "129 hash-locked test vectors" is compared against
+  the actual files in [`conformance/vectors/`](conformance/vectors/).
+- **The refusal catalogue** — the pre-compiled JSON the package ships is
+  byte-checked against the human-editable YAML source of truth.
+- **Install commands** — every `pip install` / `npm install` in this README
+  is resolved against the live registry.
+- **The ecosystem table** — rendered from [`ecosystem.yaml`](ecosystem.yaml),
+  never hand-edited; the Python version badge is generated the same way.
+
+If the badge is green, this README is telling the truth. If a claim drifts,
+the badge goes red before a human notices.
 
 ---
 
