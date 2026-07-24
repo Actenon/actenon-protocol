@@ -1,0 +1,252 @@
+{
+  "catalogue_version": "1",
+  "protocol_version": "^1",
+  "codes": [
+    {
+      "code": "MALFORMED_REQUEST",
+      "category": "request_shape",
+      "disclosed_code": "MALFORMED_REQUEST",
+      "internal_code": "MALFORMED_REQUEST",
+      "retryable": false,
+      "description": "The request could not be parsed. The artefact is not valid JSON, or\ndoes not conform to the schema, or is missing required fields.\n",
+      "disclosure_note": "Safe to disclose — no cryptographic information leaked."
+    },
+    {
+      "code": "UNSUPPORTED_PROTOCOL_VERSION",
+      "category": "request_shape",
+      "disclosed_code": "UNSUPPORTED_PROTOCOL_VERSION",
+      "internal_code": "UNSUPPORTED_PROTOCOL_VERSION",
+      "retryable": false,
+      "description": "The artefact's `protocol_version` major does not match any version\nsupported by the consumer. The consumer MUST refuse before any\nfurther processing.\n",
+      "disclosure_note": "Safe to disclose."
+    },
+    {
+      "code": "CANONICALISATION_FAILURE",
+      "category": "request_shape",
+      "disclosed_code": "CANONICALISATION_FAILURE",
+      "internal_code": "CANONICALISATION_FAILURE",
+      "retryable": false,
+      "description": "The canonicalisation profile specified in the artefact is not\nrecognised, OR the canonicalisation process failed (e.g. the input\ncontains a float, exceeds the depth limit, or exceeds the size limit).\n",
+      "disclosure_note": "Safe to disclose."
+    },
+    {
+      "code": "PROOF_MISSING",
+      "category": "proof_presence",
+      "disclosed_code": "PROOF_MISSING",
+      "internal_code": "PROOF_MISSING",
+      "retryable": false,
+      "description": "No proof was supplied with the request. The boundary requires a proof\nfor this action.\n",
+      "disclosure_note": "Safe to disclose.",
+      "compatibility_alias": "PCCB_REQUIRED"
+    },
+    {
+      "code": "PROOF_INVALID",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": null,
+      "retryable": false,
+      "description": "The proof was examined and found to be invalid. This is the\numbrella code that is disclosed to public callers. The specific\nreason (signature invalid, action mismatch, etc.) is carried in\n`internal_code` when the disclosure policy permits.\n",
+      "disclosure_note": "This is the DEFAULT disclosed code for all proof-validity failures\nunder the `public` disclosure policy. It deliberately does NOT\ndistinguish signature failures from action mismatches, to avoid\nleaking cryptographic diagnostics to untrusted callers.\n"
+    },
+    {
+      "code": "ISSUER_UNTRUSTED",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "ISSUER_UNTRUSTED",
+      "retryable": false,
+      "description": "The proof's issuer is not in the verifier's trust store. The\nsignature may be cryptographically valid but the issuer is not\nauthorised to issue proofs for this resource.\n",
+      "disclosure_note": "Detailed code; only emitted under `trusted` disclosure. The public\ndisclosure collapses this to `PROOF_INVALID` to avoid revealing\nwhich issuers the verifier trusts.\n"
+    },
+    {
+      "code": "SIGNATURE_INVALID",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "SIGNATURE_INVALID",
+      "retryable": false,
+      "description": "The proof's cryptographic signature does not verify under the\nissuer's published public key. The proof is forged or was signed\nwith a different key.\n",
+      "disclosure_note": "Detailed code; only emitted under `trusted` disclosure. Public\ncallers see `PROOF_INVALID` instead, to avoid leaking information\nabout the signature verification process.\n"
+    },
+    {
+      "code": "PROOF_EXPIRED",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_EXPIRED",
+      "internal_code": "PROOF_EXPIRED",
+      "retryable": false,
+      "description": "The proof's `expires_at` is in the past.\n",
+      "disclosure_note": "Safe to disclose — the expiry is in the proof itself.",
+      "compatibility_alias": "PCCB_EXPIRED"
+    },
+    {
+      "code": "PROOF_NOT_YET_VALID",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_NOT_YET_VALID",
+      "internal_code": "PROOF_NOT_YET_VALID",
+      "retryable": true,
+      "description": "The proof's `not_before` is in the future. The caller may retry\nafter `not_before`.\n",
+      "disclosure_note": "Safe to disclose — the not_before is in the proof itself."
+    },
+    {
+      "code": "AUDIENCE_MISMATCH",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "AUDIENCE_MISMATCH",
+      "retryable": false,
+      "description": "The proof was minted for a different audience (verifier service)\nthan the one receiving it.\n",
+      "disclosure_note": "Detailed code; only emitted under `trusted` disclosure. Public\ncallers see `PROOF_INVALID` to avoid leaking the verifier's identity.\n"
+    },
+    {
+      "code": "TARGET_MISMATCH",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "TARGET_MISMATCH",
+      "retryable": false,
+      "description": "The proof's `target` does not match the resource that the verifier\nis protecting.\n",
+      "disclosure_note": "Detailed code; trusted disclosure only."
+    },
+    {
+      "code": "ACTION_MISMATCH",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "ACTION_MISMATCH",
+      "retryable": false,
+      "description": "The proof's `action.type` does not match the action being attempted.\n",
+      "disclosure_note": "Detailed code; trusted disclosure only.",
+      "compatibility_alias": "ACTION_MISMATCH"
+    },
+    {
+      "code": "PARAMETER_MISMATCH",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "PARAMETER_MISMATCH",
+      "retryable": false,
+      "description": "The proof's `action.parameters` do not match the parameters of the\naction being attempted. The `action_hash` recomputed by the verifier\ndoes not match the `action_hash` in the proof.\n",
+      "disclosure_note": "Detailed code; trusted disclosure only.",
+      "compatibility_aliases": [
+        "ACTION_HASH_MISMATCH",
+        "INTENT_MISMATCH",
+        "SCOPE_CAPABILITY_MISMATCH"
+      ]
+    },
+    {
+      "code": "REPLAY_DETECTED",
+      "category": "proof_validity",
+      "disclosed_code": "REPLAY_DETECTED",
+      "internal_code": "REPLAY_DETECTED",
+      "retryable": false,
+      "description": "The proof has already been used. The replay store records a prior\nexecution under this `proof_id` with a different `exec_` identifier.\n\nNote: a retry with the SAME `exec_` identifier is NOT a replay; it\nis an idempotent retry and returns the prior outcome (if supported).\n",
+      "disclosure_note": "Safe to disclose.",
+      "compatibility_alias": "DUPLICATE_REPLAY"
+    },
+    {
+      "code": "AUTHORITY_REVOKED",
+      "category": "authority_state",
+      "disclosed_code": "AUTHORITY_REVOKED",
+      "internal_code": "AUTHORITY_REVOKED",
+      "retryable": false,
+      "description": "The authority under which the proof was minted has been revoked.\nThe proof may still be cryptographically valid, but the authority\nbroker has cancelled it (kill switch, parent grant revoked, etc.).\n",
+      "disclosure_note": "Safe to disclose.",
+      "compatibility_alias": "REVOKED"
+    },
+    {
+      "code": "POLICY_REFUSAL",
+      "category": "authority_state",
+      "disclosed_code": "POLICY_REFUSAL",
+      "internal_code": "POLICY_REFUSAL",
+      "retryable": false,
+      "description": "The authority broker's policy engine refused to authorise this\naction, even though the proof may be cryptographically valid.\nExamples: budget exceeded, scope denied, out of scope, rate limited.\n",
+      "disclosure_note": "Safe to disclose at this granularity.",
+      "compatibility_aliases": [
+        "SCOPE_DENIED",
+        "OUT_OF_SCOPE",
+        "BUDGET_EXCEEDED",
+        "RATE_LIMITED",
+        "NOT_ACTIVE"
+      ]
+    },
+    {
+      "code": "CREDENTIAL_UNAVAILABLE",
+      "category": "provider",
+      "disclosed_code": "CREDENTIAL_UNAVAILABLE",
+      "internal_code": "CREDENTIAL_UNAVAILABLE",
+      "retryable": true,
+      "description": "The broker could not resolve a scoped provider credential for this\naction. The credential may be missing, expired, or quarantined.\n",
+      "disclosure_note": "Safe to disclose."
+    },
+    {
+      "code": "PROVIDER_REFUSAL",
+      "category": "provider",
+      "disclosed_code": "PROVIDER_REFUSAL",
+      "internal_code": "PROVIDER_REFUSAL",
+      "retryable": false,
+      "description": "The protected provider refused to execute the action. The proof was\nvalid and the credential was available, but the provider returned\nan explicit refusal (e.g. the provider's own policy engine denied\nthe request).\n",
+      "disclosure_note": "Safe to disclose."
+    },
+    {
+      "code": "PROVIDER_FAILURE",
+      "category": "provider",
+      "disclosed_code": "PROVIDER_FAILURE",
+      "internal_code": "PROVIDER_FAILURE",
+      "retryable": true,
+      "description": "The protected provider failed to execute the action due to an\ninternal error (timeout, network, 5xx). The proof was valid but\nthe outcome is unknown.\n",
+      "disclosure_note": "Safe to disclose."
+    },
+    {
+      "code": "OUTCOME_UNKNOWN",
+      "category": "outcome",
+      "disclosed_code": "OUTCOME_UNKNOWN",
+      "internal_code": "OUTCOME_UNKNOWN",
+      "retryable": true,
+      "description": "The verifier cannot determine the outcome. This is the catch-all\nfor unexpected errors. It is also the code that consumers SHOULD\nuse when they encounter a refusal code they do not recognise\n(forward compatibility).\n",
+      "disclosure_note": "Safe to disclose."
+    }
+  ],
+  "compatibility_aliases": {
+    "PCCB_REQUIRED": "PROOF_MISSING",
+    "PCCB_EXPIRED": "PROOF_EXPIRED",
+    "DUPLICATE_REPLAY": "REPLAY_DETECTED",
+    "SIGNATURE_INVALID": "SIGNATURE_INVALID",
+    "ACTION_MISMATCH": "ACTION_MISMATCH",
+    "AUDIENCE_MISMATCH": "AUDIENCE_MISMATCH",
+    "PROOF_INVALID": "PROOF_INVALID",
+    "INTENT_MISMATCH": "PARAMETER_MISMATCH",
+    "TARGET_MISMATCH": "TARGET_MISMATCH",
+    "ACTION_HASH_MISMATCH": "PARAMETER_MISMATCH",
+    "ACTION_HASH_ALGORITHM_INVALID": "PARAMETER_MISMATCH",
+    "ACTION_HASH_INVALID": "PARAMETER_MISMATCH",
+    "SCOPE_MODE_INVALID": "PARAMETER_MISMATCH",
+    "SCOPE_CAPABILITY_MISMATCH": "PARAMETER_MISMATCH",
+    "TENANT_MISMATCH": "TARGET_MISMATCH",
+    "SUBJECT_MISMATCH": "TARGET_MISMATCH",
+    "PROOF_PAYLOAD_INVALID": "MALFORMED_REQUEST",
+    "PROOF_NOT_YET_VALID": "PROOF_NOT_YET_VALID",
+    "NOT_ACTIVE": "POLICY_REFUSAL",
+    "REVOKED": "AUTHORITY_REVOKED",
+    "EXPIRED": "PROOF_EXPIRED",
+    "SCOPE_DENIED": "POLICY_REFUSAL",
+    "OUT_OF_SCOPE": "POLICY_REFUSAL",
+    "BUDGET_EXCEEDED": "POLICY_REFUSAL",
+    "RATE_LIMITED": "POLICY_REFUSAL",
+    "ENGINE_ERROR": "OUTCOME_UNKNOWN"
+  },
+  "disclosure_policies": [
+    {
+      "name": "public",
+      "description": "Default policy. Safe for untrusted callers. Emits the umbrella\n`PROOF_INVALID` code for all proof-validity failures. Does not\npopulate `internal_code`.\n",
+      "disclosed_code_source": "disclosed_code",
+      "populate_internal_code": false
+    },
+    {
+      "name": "trusted",
+      "description": "Policy for trusted callers (internal services, audit logs, debug\nmode). Populates both `disclosed_code` and `internal_code`.\n",
+      "disclosed_code_source": "disclosed_code",
+      "populate_internal_code": true
+    },
+    {
+      "name": "local_debug",
+      "description": "Policy for local development only. Populates both fields and may\ninclude additional diagnostic context in the `message` field.\nMUST NOT be used in production.\n",
+      "disclosed_code_source": "disclosed_code",
+      "populate_internal_code": true,
+      "include_diagnostics": true
+    }
+  ]
+}

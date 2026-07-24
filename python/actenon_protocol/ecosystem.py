@@ -55,8 +55,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 __all__ = [
     "START_MARKER",
     "END_MARKER",
@@ -80,7 +78,18 @@ def load_ecosystem() -> dict[str, Any]:
     The file is shipped as package data inside the wheel; no network access
     is needed at runtime. If the file is missing, the wheel build was
     broken — fail loudly.
+
+    Requires the ``yaml`` extra: ``pip install actenon-protocol[yaml]``.
+    This module is a build/CI/doc concern only — never imported at runtime
+    by other packages.
     """
+    try:
+        import yaml  # type: ignore[import-untyped]
+    except ImportError as e:
+        raise ImportError(
+            "pyyaml is required to load ecosystem.yaml. Install with "
+            "`pip install actenon-protocol[yaml]`."
+        ) from e
     if not _DATA_FILE.exists():
         raise FileNotFoundError(
             f"ecosystem.yaml not found at {_DATA_FILE}. The wheel build did "
