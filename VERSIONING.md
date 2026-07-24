@@ -2,10 +2,28 @@
 
 ## Current version
 
-**Protocol version:** `1.0.0`
+**Protocol version:** `1.1.0`
 **Canonicalisation profile:** `ACTENON-JCS-STRICT-1` (profile version `1`)
 **Refusal taxonomy version:** `1`
 **Identifier registry version:** `1`
+
+## Protocol version vs package version
+
+Two distinct versions exist in this repository, and they may legitimately diverge:
+
+* **Protocol version** (`PROTOCOL_VERSION` in
+  [`python/actenon_protocol/version.py`](python/actenon_protocol/version.py)) —
+  the wire-format contract. It changes only when wire semantics change, per the
+  rules in this document.
+* **Package version** (`version` in `pyproject.toml`, mirrored by git tags and
+  PyPI) — the Python distribution. It also bumps for packaging, tooling, and
+  documentation releases that leave the wire format untouched, so it runs at or
+  ahead of the protocol version.
+
+A mismatch between the two is **not** drift and must never be "fixed" by
+lowering `pyproject.toml`. Once a version is tagged or published, the package
+version only moves forward. (PR #7 lowered `1.2.0` to `1.1.0` for exactly this
+reason; the CI version-coherence gate now rejects that direction.)
 
 ## Versioning scheme
 

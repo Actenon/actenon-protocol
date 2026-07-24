@@ -6,6 +6,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 with the protocol-specific extensions described in [VERSIONING.md](VERSIONING.md).
 
+Note: the version below is the **Python package** version (what `pyproject.toml`,
+git tags, and PyPI carry). The **wire protocol** version is declared separately in
+[`python/actenon_protocol/version.py`](python/actenon_protocol/version.py)
+(`PROTOCOL_VERSION`) and only changes when wire semantics change. The two may
+legitimately diverge; see VERSIONING.md § "Protocol version vs package version".
+
+## [1.3.0] — 2026-07-24
+
+### Fixed
+
+* **Version rollback corrected.** PR #7 lowered `pyproject.toml` from `1.2.0` to
+  `1.1.0` to match `version.py` and the README badge, at a point where tag
+  `v1.2.0` existed and PyPI already served `1.2.0`. That left `main` labelled
+  older than the published package, so a source build produced a mislabelled
+  artifact. The mismatch it tried to fix was a conflation of the wire protocol
+  version (`PROTOCOL_VERSION`, legitimately `1.1.0`) with the package version.
+  A published version is never reduced — the package version moves forward to
+  `1.3.0`, which also covers the additive changes below.
+
+### Added
+
+* Pre-compiled JSON refusal catalogue (`python/actenon_protocol/data/catalogue.v1.json`)
+  and `scripts/compile_yaml_to_json.py` — the package loads the catalogue with zero
+  runtime dependencies; YAML remains the human-editable source of truth (PR #7).
+* Optional extras `[types]`, `[yaml]`, `[conformance]`, `[all]` replacing the four
+  former unconditional runtime dependencies, making the "zero dependencies" claim
+  true (PR #7).
+* Expanded `refusal_codes.py` catalogue-loading API (PR #7).
+* CI: link-check and test baseline fixes (#5), version-drift gate (#8, since
+  superseded by the three-way version-coherence gate).
+
+## [1.2.0] — 2026-07-23 (retroactive entry)
+
+Tagged and published without a changelog entry at the time; recorded here after
+the fact.
+
+### Added
+
+* Ecosystem table in the README rendered from `ecosystem.yaml`
+  (`actenon_protocol.ecosystem`, PR #4).
+
+## [1.1.0] — 2026-07-22 (retroactive entry)
+
+Tagged and published without a changelog entry at the time; recorded here after
+the fact.
+
+### Added
+
+* Protocol `1.1.0` (Prompt 9): `ExecutionResult` discriminated union
+  (`BrokeredExecutionResult` | `ResourceOwnedExecutionResult`) and per-mode
+  state machines. Purely additive over protocol `1.0.0`.
+* PyPI publish workflow.
+
 ## [1.0.0] — 2026-07-21
 
 ### Context
