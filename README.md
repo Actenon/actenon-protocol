@@ -62,7 +62,7 @@ The Protocol defines the **wire format** that every Actenon component speaks. It
 
 - **Neutral** — no runtime dependencies, no framework assumptions, no cloud requirement, no opinion on how you implement verification.
 - **Versioned** — v1.3.0 (backward-compatible with v1.0.0–v1.2.0). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
-- **Cross-language** — the wire protocol is language-neutral; Python (PyPI), TypeScript (npm), Go, and Rust SDKs all conform to the same hash-locked conformance vectors. Python is the only SDK published to a registry at the current version; see [Multi-language SDKs](#multi-language-sdks--conformant-implementations) for the honest packaging status of each SDK.
+- **Cross-language** — Python (PyPI v1.3.0), TypeScript (npm v1.3.0), Go (`go get github.com/actenon/sdk-go@v1.0.0`), and Rust (git dependency; crates.io pending) SDKs all conform to the same hash-locked conformance vectors. See [Multi-language SDKs](#multi-language-sdks--conformant-implementations) for the packaging status of each SDK.
 - **Hash-locked** — conformance vectors are versioned and frozen; an implementation that passes v1.0.0 vectors will keep passing them forever.
 - **Implementation-independent** — the same protocol can be implemented by Actenon, by a vendor, by an open-source competitor, or by an in-house team. Conformance, not pedigree, decides validity.
 
@@ -156,22 +156,21 @@ See [`identifiers/prefixes.v1.yaml`](identifiers/prefixes.v1.yaml).
 | Implementation | Status | Path |
 |---|---|---|
 | **Python reference** | Stable v1.3.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
-| **TypeScript types** | v1.3.0 (source); npm publish pending | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` (currently serves v1.0.0; v1.3.0 publish is tracked in CI) |
-| **Go SDK** | Conformant (source-available; not yet on a Go module proxy) | in `actenon-kernel` [`sdk/go/`](https://github.com/Actenon/actenon-kernel/tree/main/sdk/go) — vendor or `replace` directive |
-| **Rust SDK** | Conformant (source-available; not yet on crates.io) | in `actenon-kernel` [`sdk/rust/`](https://github.com/Actenon/actenon-kernel/tree/main/sdk/rust) — vendor or git dependency |
+| **TypeScript types** | Stable v1.3.0 on npm | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
+| **Go SDK** | v1.0.0 — `go get github.com/actenon/sdk-go@v1.0.0` | [`Actenon/sdk-go`](https://github.com/Actenon/sdk-go) |
+| **Rust SDK** | v0.1.0 — git dependency or `cargo add --git` | [`Actenon/sdk-rust`](https://github.com/Actenon/sdk-rust) (crates.io publish pending token) |
 | **OpenAPI 3.1 components** | Stable | [`openapi/components.yaml`](openapi/components.yaml) — drop into any OpenAPI-aware toolchain |
 | **JSON Schemas** | Stable v1 | [`schemas/`](schemas/) — validate any artefact in any language |
 
 **Honest status:** the wire protocol is fully cross-language — the
 conformance vectors are hash-locked JSON that any language can pass. The
-*packaging* is not yet at parity: Python is the only SDK published to a
-registry at the current version. TypeScript types are at v1.0.0 on npm
-(v1.3.0 source prepared, publish pending). Go and Rust SDKs are
-source-available inside the kernel repo but not yet published to a module
-proxy or crates.io. A Go team cannot `go get` anything yet; a Rust team
-cannot `cargo add` anything yet. We are working on registry publication;
-until then, the Go and Rust SDKs are reference implementations you vendor
-yourself.
+*packaging* is now at near-parity: Python and TypeScript are both at v1.3.0
+on their respective registries. Go is at v1.0.0 and can be installed with
+`go get github.com/actenon/sdk-go@v1.0.0`. Rust is at v0.1.0 as a git
+dependency (`cargo add --git https://github.com/Actenon/sdk-rust`);
+crates.io publication is prepared (Cargo.toml has all required fields,
+publish workflow is in place) and will complete once the
+`CARGO_REGISTRY_TOKEN` secret is added to the sdk-rust repo.
 
 Every implementation runs against the same hash-locked conformance vectors in [`conformance/vectors/`](conformance/vectors/). Conformance, not pedigree, decides validity.
 
