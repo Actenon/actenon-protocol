@@ -74,6 +74,39 @@ jobs:
       - name: Check generated Python badge
         run: python scripts/sync_badges.py --check
 
+      - name: Check README version badge matches pyproject
+        # The root-of-trust repo must never have a stale version badge.
+        # This catches the drift the external review found (README said
+        # v1.1.0 while pyproject was at v1.3.0). Checks the badge line
+        # and the "Actenon-compatible" mark, not every version mention
+        # (backward-compat references to v1.0.0 are legitimate).
+        run: |
+          python - <<'EOF'
+          import pathlib, re, sys, tomllib
+          with open('pyproject.toml','rb') as f:
+              pyproject = tomllib.load(f)
+          pyproject_version = pyproject['project']['version']
+          readme = pathlib.Path('README.md').read_text()
+          problems = []
+          # Check the Version badge.
+          badge_match = re.search(r'!\[Version: v(\d+\.\d+\.\d+)\]', readme)
+          if badge_match and badge_match.group(1) != pyproject_version:
+              problems.append(f'badge says v{badge_match.group(1)}, pyproject is {pyproject_version}')
+          # Check the "Actenon-compatible vX.Y.Z" mark.
+          compat_matches = re.findall(r'Actenon-compatible v(\d+\.\d+\.\d+)', readme)
+          for v in compat_matches:
+              if v != pyproject_version:
+                  problems.append(f'"Actenon-compatible v{v}" mark is stale; pyproject is {pyproject_version}')
+          # Check the "Python reference" status line.
+          ref_match = re.search(r'Python reference.*?Stable v(\d+\.\d+\.\d+) on PyPI', readme)
+          if ref_match and ref_match.group(1) != pyproject_version:
+              problems.append(f'Python reference status says v{ref_match.group(1)}, pyproject is {pyproject_version}')
+          if problems:
+              for p in problems: print(f'FAIL: {p}', file=sys.stderr)
+              sys.exit(1)
+          print(f'OK: README version badge, compatibility mark, and Python reference status all match pyproject ({pyproject_version})')
+          EOF
+
       - name: Check README registry installs
         run: python scripts/check_readme_installs.py
 
