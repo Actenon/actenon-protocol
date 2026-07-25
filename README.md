@@ -221,6 +221,11 @@ canonical_bytes = canonicalize_json({
 
 ## Conformance vectors
 
+> **Looking for the canonical conformance map?** See
+> [`CONFORMANCE.md`](CONFORMANCE.md) for the single page that maps the
+> Protocol's 129 vectors and the Kernel's 51 vectors onto "what you must
+> pass to claim what."
+
 The protocol ships **129 hash-locked test vectors** across 6 categories:
 
 | Category | Valid | Invalid | Total | What it tests |
