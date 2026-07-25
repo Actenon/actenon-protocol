@@ -3,7 +3,7 @@
 > The neutral, open, implementation-independent boundary contract for proof-bound consequential execution. Defines the wire shape every Actenon artefact speaks. Zero runtime dependencies. Any language, any framework, any cloud.
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![Version: v1.1.0](https://img.shields.io/badge/Version-v1.1.0-blue.svg)](CHANGELOG.md)
+[![Version: v1.3.0](https://img.shields.io/badge/Version-v1.3.0-blue.svg)](CHANGELOG.md)
 <!-- PYTHON-BADGE:START -->
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 <!-- PYTHON-BADGE:END -->
@@ -61,8 +61,8 @@ The Protocol is the **only** repo the other four share as a common dependency �
 The Protocol defines the **wire format** that every Actenon component speaks. It is:
 
 - **Neutral** — no runtime dependencies, no framework assumptions, no cloud requirement, no opinion on how you implement verification.
-- **Versioned** — v1.1.0 (backward-compatible with v1.0.0). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
-- **Cross-language** — Python reference, TypeScript types, Go SDK, Rust SDK all conform to the same hash-locked conformance vectors.
+- **Versioned** — v1.3.0 (backward-compatible with v1.0.0–v1.2.0). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
+- **Cross-language** — the wire protocol is language-neutral; Python (PyPI), TypeScript (npm), Go, and Rust SDKs all conform to the same hash-locked conformance vectors. Python is the only SDK published to a registry at the current version; see [Multi-language SDKs](#multi-language-sdks--conformant-implementations) for the honest packaging status of each SDK.
 - **Hash-locked** — conformance vectors are versioned and frozen; an implementation that passes v1.0.0 vectors will keep passing them forever.
 - **Implementation-independent** — the same protocol can be implemented by Actenon, by a vendor, by an open-source competitor, or by an in-house team. Conformance, not pedigree, decides validity.
 
@@ -155,12 +155,23 @@ See [`identifiers/prefixes.v1.yaml`](identifiers/prefixes.v1.yaml).
 
 | Implementation | Status | Path |
 |---|---|---|
-| **Python reference** | Stable v1.1.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
-| **TypeScript types** | Stable v1.0.0 on npm | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
-| **Go SDK** | Conformant | in `actenon-kernel` `sdk/go/` |
-| **Rust SDK** | Conformant | in `actenon-kernel` `sdk/rust/` |
+| **Python reference** | Stable v1.3.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
+| **TypeScript types** | v1.3.0 (source); npm publish pending | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` (currently serves v1.0.0; v1.3.0 publish is tracked in CI) |
+| **Go SDK** | Conformant (source-available; not yet on a Go module proxy) | in `actenon-kernel` [`sdk/go/`](https://github.com/Actenon/actenon-kernel/tree/main/sdk/go) — vendor or `replace` directive |
+| **Rust SDK** | Conformant (source-available; not yet on crates.io) | in `actenon-kernel` [`sdk/rust/`](https://github.com/Actenon/actenon-kernel/tree/main/sdk/rust) — vendor or git dependency |
 | **OpenAPI 3.1 components** | Stable | [`openapi/components.yaml`](openapi/components.yaml) — drop into any OpenAPI-aware toolchain |
 | **JSON Schemas** | Stable v1 | [`schemas/`](schemas/) — validate any artefact in any language |
+
+**Honest status:** the wire protocol is fully cross-language — the
+conformance vectors are hash-locked JSON that any language can pass. The
+*packaging* is not yet at parity: Python is the only SDK published to a
+registry at the current version. TypeScript types are at v1.0.0 on npm
+(v1.3.0 source prepared, publish pending). Go and Rust SDKs are
+source-available inside the kernel repo but not yet published to a module
+proxy or crates.io. A Go team cannot `go get` anything yet; a Rust team
+cannot `cargo add` anything yet. We are working on registry publication;
+until then, the Go and Rust SDKs are reference implementations you vendor
+yourself.
 
 Every implementation runs against the same hash-locked conformance vectors in [`conformance/vectors/`](conformance/vectors/). Conformance, not pedigree, decides validity.
 
@@ -210,6 +221,11 @@ canonical_bytes = canonicalize_json({
 
 ## Conformance vectors
 
+> **Looking for the canonical conformance map?** See
+> [`CONFORMANCE.md`](CONFORMANCE.md) for the single page that maps the
+> Protocol's 129 vectors and the Kernel's 51 vectors onto "what you must
+> pass to claim what."
+
 The protocol ships **129 hash-locked test vectors** across 6 categories:
 
 | Category | Valid | Invalid | Total | What it tests |
@@ -224,9 +240,9 @@ The protocol ships **129 hash-locked test vectors** across 6 categories:
 
 **129 vectors run on every PR** via the [CI workflow](.github/workflows/ci.yml), across Python 3.10 / 3.11 / 3.12, plus the TypeScript conformance suite (21 tests).
 
-### External implementations — earn "Actenon-compatible v1.1.0"
+### External implementations — earn "Actenon-compatible v1.3.0"
 
-An external implementation is Actenon-compatible v1.1.0 if it accepts every valid vector and rejects every invalid vector. The [Runner Specification](conformance/RUNNER_SPEC.md) defines the interface, and the [standalone runner](conformance/runner.py) is a ready-to-use Python script that external implementations can subclass:
+An external implementation is Actenon-compatible v1.3.0 if it accepts every valid vector and rejects every invalid vector. The [Runner Specification](conformance/RUNNER_SPEC.md) defines the interface, and the [standalone runner](conformance/runner.py) is a ready-to-use Python script that external implementations can subclass:
 
 ```bash
 pip install -e ".[dev]"
@@ -249,7 +265,7 @@ Vectors are generated by [`conformance/generate_vectors.py`](conformance/generat
 2. **Canonicalisation is deterministic** — `ACTENON-JCS-STRICT-1` (RFC 8785 subset), sorted keys, no whitespace, floats rejected, duplicate keys rejected.
 3. **Refusal codes have two layers** — public-safe umbrella (`PROOF_INVALID`) + trusted detail (`AUDIENCE_MISMATCH`).
 4. **Results are discriminated** — brokered and resource-owned results have disjoint field sets.
-5. **Backward-compatible** — v1.1.0 is purely additive over v1.0.0.
+5. **Backward-compatible** — v1.3.0 is purely additive over v1.0.0–v1.2.0.
 6. **Hash-locked** — conformance vectors are versioned and frozen.
 7. **No ambient authority** — no field implies trust in an issuer, signer, or control plane. Trust is configured by the verifier.
 
