@@ -62,7 +62,7 @@ The Protocol defines the **wire format** that every Actenon component speaks. It
 
 - **Neutral** — no runtime dependencies, no framework assumptions, no cloud requirement, no opinion on how you implement verification.
 - **Versioned** — v1.3.0 (backward-compatible with v1.0.0–v1.2.0). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
-- **Cross-language** — Python reference, TypeScript types, Go SDK, Rust SDK all conform to the same hash-locked conformance vectors.
+- **Cross-language** — the wire protocol is language-neutral; Python (PyPI), TypeScript (npm), Go, and Rust SDKs all conform to the same hash-locked conformance vectors. Python is the only SDK published to a registry at the current version; see [Multi-language SDKs](#multi-language-sdks--conformant-implementations) for the honest packaging status of each SDK.
 - **Hash-locked** — conformance vectors are versioned and frozen; an implementation that passes v1.0.0 vectors will keep passing them forever.
 - **Implementation-independent** — the same protocol can be implemented by Actenon, by a vendor, by an open-source competitor, or by an in-house team. Conformance, not pedigree, decides validity.
 
@@ -156,11 +156,22 @@ See [`identifiers/prefixes.v1.yaml`](identifiers/prefixes.v1.yaml).
 | Implementation | Status | Path |
 |---|---|---|
 | **Python reference** | Stable v1.3.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
-| **TypeScript types** | Stable v1.0.0 on npm | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
-| **Go SDK** | Conformant | in `actenon-kernel` `sdk/go/` |
-| **Rust SDK** | Conformant | in `actenon-kernel` `sdk/rust/` |
+| **TypeScript types** | v1.3.0 (source); npm publish pending | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` (currently serves v1.0.0; v1.3.0 publish is tracked in CI) |
+| **Go SDK** | Conformant (source-available; not yet on a Go module proxy) | in `actenon-kernel` [`sdk/go/`](https://github.com/Actenon/actenon-kernel/tree/main/sdk/go) — vendor or `replace` directive |
+| **Rust SDK** | Conformant (source-available; not yet on crates.io) | in `actenon-kernel` [`sdk/rust/`](https://github.com/Actenon/actenon-kernel/tree/main/sdk/rust) — vendor or git dependency |
 | **OpenAPI 3.1 components** | Stable | [`openapi/components.yaml`](openapi/components.yaml) — drop into any OpenAPI-aware toolchain |
 | **JSON Schemas** | Stable v1 | [`schemas/`](schemas/) — validate any artefact in any language |
+
+**Honest status:** the wire protocol is fully cross-language — the
+conformance vectors are hash-locked JSON that any language can pass. The
+*packaging* is not yet at parity: Python is the only SDK published to a
+registry at the current version. TypeScript types are at v1.0.0 on npm
+(v1.3.0 source prepared, publish pending). Go and Rust SDKs are
+source-available inside the kernel repo but not yet published to a module
+proxy or crates.io. A Go team cannot `go get` anything yet; a Rust team
+cannot `cargo add` anything yet. We are working on registry publication;
+until then, the Go and Rust SDKs are reference implementations you vendor
+yourself.
 
 Every implementation runs against the same hash-locked conformance vectors in [`conformance/vectors/`](conformance/vectors/). Conformance, not pedigree, decides validity.
 
