@@ -118,6 +118,8 @@ def _row_for_repo(repo: dict[str, Any], here: bool) -> str:
         pkg_parts.append(f"`{repo['pypi']}` (PyPI)")
     if "npm" in repo:
         pkg_parts.append(f"`{repo['npm']}` (npm)")
+    if "url" in repo and not pkg_parts:
+        pkg_parts.append(f"[repo]({repo['url']})")
     pkg_cell = " · ".join(pkg_parts) if pkg_parts else "—"
     name_cell = f"**`{name}`**"
     if here:
@@ -152,7 +154,7 @@ def render_table(here_repo: str) -> str:
 
     if here_repo not in [r["name"] for r in repos]:
         raise ValueError(
-            f"--repo {here_repo!r} is not one of the four ecosystem repos: "
+            f"--repo {here_repo!r} is not one of the ecosystem repos: "
             f"{[r['name'] for r in repos]!r}. The renderer does not "
             "auto-detect the current repo from git; pass --repo explicitly."
         )
