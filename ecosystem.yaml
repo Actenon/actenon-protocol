@@ -18,6 +18,14 @@ repos:
     role: The independent static-analysis scanner
     depends_on: []
     pypi: actenon-scan
+  - name: sdk-go
+    role: Go verifier SDK — protected-endpoint proof verification in Go
+    depends_on: [actenon-protocol]
+    url: https://github.com/Actenon/sdk-go
+  - name: sdk-rust
+    role: Rust verifier SDK — protected-endpoint proof verification in Rust
+    depends_on: [actenon-protocol]
+    url: https://github.com/Actenon/sdk-rust
 
 optional:
   - name: actenon-cloud
