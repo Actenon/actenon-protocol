@@ -1,0 +1,46 @@
+{
+  "name": "@actenon/protocol",
+  "version": "1.0.0",
+  "description": "Actenon protocol runtime — ACTENON-JCS-STRICT-1 canonicaliser and related utilities for TypeScript consumers.",
+  "license": "Apache-2.0",
+  "author": "Actenon Ltd",
+  "homepage": "https://github.com/Actenon/actenon-protocol",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Actenon/actenon-protocol",
+    "directory": "typescript-runtime"
+  },
+  "bugs": {
+    "url": "https://github.com/Actenon/actenon-protocol/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "conformance": "bun run tests/conformance.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@actenon/protocol-types": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "^1.1.0"
+  },
+  "files": [
+    "dist/",
+    "src/"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
