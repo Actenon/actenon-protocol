@@ -11,8 +11,12 @@ import {
   DisclosurePolicy,
   refusalToDisclosedCode,
   refusalToRetryable,
+  refusalToInternalCode,
   resolveAlias,
+  COMPATIBILITY_ALIASES,
 } from "../src/refusal-codes.js";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { ExecutionMode } from "../src/execution-modes.js";
 
 describe("identifiers", () => {
@@ -181,6 +185,28 @@ describe("refusal codes", () => {
 
   test("disclosed_code for REPLAY_DETECTED is REPLAY_DETECTED (safe to disclose)", () => {
     expect(refusalToDisclosedCode(RefusalCode.REPLAY_DETECTED, DisclosurePolicy.PUBLIC)).toBe("REPLAY_DETECTED");
+  });
+
+  test("mirrors the compiled catalogue (codes, disclosure, retryability, aliases)", () => {
+    const catalogue = JSON.parse(
+      readFileSync(join(import.meta.dir, "../../python/actenon_protocol/data/catalogue.v1.json"), "utf-8")
+    );
+    const codes = catalogue.codes as Array<{ code: string; disclosed_code: string; retryable: boolean }>;
+    expect((Object.values(RefusalCode) as string[]).sort()).toEqual(codes.map((c) => c.code).sort());
+    expect({ ...COMPATIBILITY_ALIASES }).toEqual(catalogue.compatibility_aliases);
+    for (const c of codes) {
+      expect(refusalToDisclosedCode(c.code, DisclosurePolicy.PUBLIC)).toBe(c.disclosed_code);
+      expect(refusalToRetryable(c.code)).toBe(c.retryable);
+    }
+    // Aliases resolve BEFORE disclosure/retryability (DUPLICATE_REPLAY used to
+    // disclose OUTCOME_UNKNOWN with retryable=true).
+    for (const [alias, canonical] of Object.entries(catalogue.compatibility_aliases as Record<string, string>)) {
+      const entry = codes.find((c) => c.code === canonical)!;
+      expect(refusalToDisclosedCode(alias, DisclosurePolicy.PUBLIC)).toBe(entry.disclosed_code);
+      expect(refusalToRetryable(alias)).toBe(entry.retryable);
+      expect(refusalToInternalCode(alias, DisclosurePolicy.TRUSTED)).toBe(canonical);
+      expect(refusalToInternalCode(alias, DisclosurePolicy.PUBLIC)).toBeNull();
+    }
   });
 
   test("unknown codes named like Object.prototype members are unknown, not inherited", () => {

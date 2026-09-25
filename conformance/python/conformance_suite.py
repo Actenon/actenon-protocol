@@ -557,6 +557,26 @@ class TestRefusalCatalogue:
             )
             assert refusal_to_retryable(entry["code"]) is entry["retryable"], entry["code"]
 
+    @pytest.mark.parametrize("alias", sorted(__import__("actenon_protocol").COMPATIBILITY_ALIASES))
+    def test_compatibility_aliases_disclose_like_their_canonical_code(self, alias):
+        """Legacy kernel/permit codes must resolve BEFORE disclosure mapping.
+
+        They used to miss the map and come out as OUTCOME_UNKNOWN with
+        retryable=True: DUPLICATE_REPLAY, REVOKED and EXPIRED were told to
+        retry although REPLAY_DETECTED / AUTHORITY_REVOKED / PROOF_EXPIRED
+        are final. The trusted internal_code must be the canonical code,
+        because the refusal schema's internal_code enum has no aliases.
+        """
+        from actenon_protocol.refusal_codes import all_codes
+
+        canonical = resolve_alias(alias)
+        entry = next(e for e in all_codes() if e["code"] == canonical)
+        for policy in DisclosurePolicy:
+            assert refusal_to_disclosed_code(alias, policy) == entry["disclosed_code"]
+        assert refusal_to_retryable(alias) is entry["retryable"]
+        assert refusal_to_internal_code(alias, DisclosurePolicy.PUBLIC) is None
+        assert refusal_to_internal_code(alias, DisclosurePolicy.TRUSTED) == canonical
+
     def test_public_safe_codes_subset_of_detailed_or_umbrella(self):
         # PUBLIC_SAFE_CODES includes umbrella codes (like PROOF_INVALID) that
         # have internal_code=null in the catalogue. DETAILED_CODES only

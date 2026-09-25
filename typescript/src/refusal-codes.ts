@@ -168,21 +168,37 @@ export function resolveAlias(alias: string): string {
   throw new Error(`refusal code ${JSON.stringify(alias)} is neither canonical nor a registered alias`);
 }
 
-export function refusalToDisclosedCode(internalCode: string | null, _policy: DisclosurePolicy): string {
-  if (internalCode === null) return RefusalCode.PROOF_MISSING;
-  if (!Object.hasOwn(INTERNAL_TO_DISCLOSED, internalCode)) return RefusalCode.OUTCOME_UNKNOWN;
-  return INTERNAL_TO_DISCLOSED[internalCode];
+// Resolve a canonical code or compatibility alias; null if unknown. Legacy
+// codes (DUPLICATE_REPLAY, REVOKED, EXPIRED, ACTION_HASH_MISMATCH, ...) must
+// be resolved BEFORE the disclosure / retryability lookups, or they fall
+// through to OUTCOME_UNKNOWN / retryable=true.
+function canonicalOrNull(code: string): string | null {
+  if (Object.values(RefusalCode).includes(code as RefusalCode)) return code;
+  if (Object.hasOwn(COMPATIBILITY_ALIASES, code)) return COMPATIBILITY_ALIASES[code];
+  return null;
 }
 
+export function refusalToDisclosedCode(internalCode: string | null, _policy: DisclosurePolicy): string {
+  if (internalCode === null) return RefusalCode.PROOF_MISSING;
+  const canonical = canonicalOrNull(internalCode);
+  if (canonical === null) return RefusalCode.OUTCOME_UNKNOWN;
+  return INTERNAL_TO_DISCLOSED[canonical];
+}
+
+// Under PUBLIC returns null. Otherwise returns the canonical code for a
+// compatibility alias (the refusal schema's internal_code enum has no
+// aliases); unknown codes are returned unchanged.
 export function refusalToInternalCode(internalCode: string | null, policy: DisclosurePolicy): string | null {
   if (policy === DisclosurePolicy.PUBLIC) return null;
-  return internalCode;
+  if (internalCode === null) return null;
+  return canonicalOrNull(internalCode) ?? internalCode;
 }
 
 export function refusalToRetryable(internalCode: string | null): boolean {
   if (internalCode === null) return RETRYABLE[RefusalCode.PROOF_MISSING];
-  if (!Object.hasOwn(RETRYABLE, internalCode)) return true;
-  return RETRYABLE[internalCode];
+  const canonical = canonicalOrNull(internalCode);
+  if (canonical === null) return true;
+  return RETRYABLE[canonical];
 }
 
 export function isDisclosedCodeSafe(code: string): boolean {
