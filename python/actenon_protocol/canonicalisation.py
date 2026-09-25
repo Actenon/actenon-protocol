@@ -52,7 +52,9 @@ def _utf8(value: str) -> bytes:
     CanonicalisationError, never a silently substituted or escaped value.
     """
     try:
-        return value.encode("utf-8")
+        # str.encode, not value.encode: a str subclass must not be able to
+        # substitute different bytes (and so a different key order).
+        return str.encode(value, "utf-8")
     except UnicodeEncodeError as e:
         raise CanonicalisationError(
             "strings must not contain unpaired UTF-16 surrogates "
@@ -76,7 +78,10 @@ def _canonicalize_json(value: Any) -> str:
     if value is False:
         return "false"
     if isinstance(value, int) and not isinstance(value, bool):
-        return str(value)
+        # int.__repr__, not str(): subclasses (IntEnum on Python 3.10,
+        # HTTPStatus, or any class overriding __str__) must serialise as
+        # their integer value, never as "HTTPStatus.OK" or injected text.
+        return int.__repr__(value)
     if isinstance(value, float):
         raise CanonicalisationError(
             "floating-point values are not supported in ACTENON-JCS-STRICT-1; "

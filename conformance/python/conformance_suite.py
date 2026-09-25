@@ -206,6 +206,39 @@ class TestCanonicalisationInvalid:
         with pytest.raises(CanonicalisationError):
             canonicalize_json(Custom())
 
+    def test_int_subclasses_serialise_as_plain_integers(self):
+        """int subclasses must emit their integer value, never their __str__.
+
+        On Python 3.10, str(HTTPStatus.OK) is "HTTPStatus.OK", so the
+        canonical form was not even JSON and differed from 3.11+ ("200").
+        A subclass overriding __str__ could inject arbitrary members.
+        """
+        import enum
+        from http import HTTPStatus
+
+        class Code(enum.IntEnum):
+            REFUND = 7
+
+        class Sneaky(int):
+            def __str__(self):
+                return '1,"injected":true'
+
+            __repr__ = __str__
+
+        assert canonicalize_json({"status": HTTPStatus.OK}) == '{"status":200}'
+        assert canonicalize_json([Code.REFUND]) == "[7]"
+        assert canonicalize_json({"a": Sneaky(1)}) == '{"a":1}'
+
+    def test_str_subclass_cannot_change_key_order(self):
+        """Key order comes from the UTF-8 bytes of the string data itself."""
+
+        class Liar(str):
+            def encode(self, *args, **kwargs):
+                return b"\x00" + str.encode(self, *args, **kwargs)
+
+        assert canonicalize_json({"a": 1, Liar("b"): 2}) == canonicalize_json({"a": 1, "b": 2})
+        assert canonicalize_json({Liar("b"): 2, "a": 1}) == '{"a":1,"b":2}'
+
 
 class TestCanonicalisationUnicodeAndOrdering:
     """Specific Unicode and key-ordering guarantees."""
