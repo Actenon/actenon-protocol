@@ -60,6 +60,12 @@ jobs:
         working-directory: typescript-runtime
         run: bun run build
 
+      - name: Smoke-test dist/ under plain Node.js
+        # Bun transpiles TS inside node_modules; Node does not. This catches
+        # a dist/ that imports a TypeScript-source-only package at runtime.
+        working-directory: typescript-runtime
+        run: node tests/node-import.mjs
+
       - name: Run conformance suite
         working-directory: typescript-runtime
         run: bun run tests/conformance.ts

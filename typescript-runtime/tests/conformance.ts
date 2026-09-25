@@ -22,6 +22,9 @@
  */
 
 import { canonicalizeJson, canonicalize, parseStrict, CanonicalisationError } from "../src/canonicalisation.js";
+import * as runtimeVersion from "../src/version.js";
+// The types package (source of truth for these constants) in this repo.
+import * as typesVersion from "../../typescript/src/version.js";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
@@ -407,6 +410,23 @@ function run(): number {
         console.log(`  FAIL  ${name}: wrong error type: ${e instanceof Error ? e.constructor.name : typeof e}`);
         failed++;
       }
+    }
+  }
+
+  // ── Version constants mirror @actenon/protocol-types ──────────
+  for (const name of [
+    "PROTOCOL_VERSION",
+    "CANONICALISATION_PROFILE",
+    "LEGACY_CANONICALISATION_PROFILE",
+    "ACCEPTED_CANONICALISATION_PROFILES",
+  ] as const) {
+    const a = JSON.stringify(runtimeVersion[name]);
+    const b = JSON.stringify(typesVersion[name]);
+    if (a === b) {
+      passed++;
+    } else {
+      console.log(`  FAIL  version_constant_${name}: runtime ${a} != protocol-types ${b}`);
+      failed++;
     }
   }
 
