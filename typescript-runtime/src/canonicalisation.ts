@@ -247,10 +247,8 @@ function scanStrict(text: string): void {
       let strContent = "";
       while (i < len) {
         if (text[i] === "\\") {
-          // Keep the escape sequence as-is for key comparison.
-          // JSON.parse will decode it later; we compare on the raw
-          // (escaped) form, which is consistent because duplicate
-          // keys in the same object would use the same escaping.
+          // Keep the escape sequence as-is here; the key is decoded
+          // below before the duplicate comparison.
           strContent += text[i] + text[i + 1];
           i += 2;
           continue;
@@ -272,14 +270,21 @@ function scanStrict(text: string): void {
         // This string is an object key. Check for duplicates at the
         // current object level.
         if (keyStack.length > 0) {
+          // Compare DECODED keys. JSON.parse decodes escapes before it
+          // applies last-wins, so "amount" and "amount" (or "/" and
+          // "\/") name the same member. Comparing the raw escaped text
+          // would let {"amount":1,"amount":1000} through as
+          // {"amount":1000}. A malformed key throws SyntaxError here,
+          // exactly as the JSON.parse call below would.
+          const key = JSON.parse(`"${strContent}"`) as string;
           const currentKeys = keyStack[keyStack.length - 1];
-          if (currentKeys.has(strContent)) {
+          if (currentKeys.has(key)) {
             throw new CanonicalisationError(
-              `duplicate key ${JSON.stringify(strContent)} in object — ` +
+              `duplicate key ${JSON.stringify(key)} in object — ` +
               `duplicate keys are prohibited by ACTENON-JCS-STRICT-1 §4.12`
             );
           }
-          currentKeys.add(strContent);
+          currentKeys.add(key);
         }
       }
       continue;

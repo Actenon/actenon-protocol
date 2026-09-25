@@ -305,6 +305,35 @@ function run(): number {
     }
   }
 
+  // ── Duplicate keys spelled with different escapes (security) ──
+  // JSON.parse decodes escapes before applying last-wins, so a key that
+  // is only textually different ("amount" vs "amount") is still a
+  // duplicate. The scanner must compare DECODED keys.
+  const escapedDuplicates: Array<[string, string]> = [
+    ["dup_key_unicode_escape", '{"amount":1,"\\u0061mount":1000}'],
+    ["dup_key_unicode_escape_first", '{"\\u0061mount":1,"amount":1000}'],
+    ["dup_key_solidus_escape", '{"/":1,"\\/":2}'],
+    ["dup_key_hex_case", '{"\\u00E9":1,"\\u00e9":2}'],
+    ["dup_key_non_ascii_escape", '{"\\u00e9":1,"é":2}'],
+    ["dup_key_surrogate_pair_escape", '{"\\uD83D\\uDE00":1,"😀":2}'],
+    ["dup_key_nested_escape", '{"a":{"b":1,"\\u0062":2}}'],
+    ["dup_key_in_array_escape", '[{"x":1},{"x":2,"\\u0078":3}]'],
+  ];
+  for (const [name, text] of escapedDuplicates) {
+    try {
+      const parsed = parseStrict(text);
+      console.log(`  FAIL  ${name}: expected duplicate-key error but parseStrict returned ${JSON.stringify(parsed)}`);
+      failed++;
+    } catch (e) {
+      if (e instanceof CanonicalisationError) {
+        passed++;
+      } else {
+        console.log(`  FAIL  ${name}: wrong error type: ${e instanceof Error ? e.constructor.name : typeof e}`);
+        failed++;
+      }
+    }
+  }
+
   // ── Duplicate values accepted (no false positive) ─────────────
   try {
     parseStrict('{"a":1,"b":1}');
