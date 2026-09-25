@@ -162,13 +162,15 @@ const RETRYABLE: Record<string, boolean> = {
 export function resolveAlias(alias: string): string {
   // Try canonical first
   if (Object.values(RefusalCode).includes(alias as RefusalCode)) return alias;
-  if (alias in COMPATIBILITY_ALIASES) return COMPATIBILITY_ALIASES[alias];
+  // Object.hasOwn, not `in`: "toString", "constructor", "__proto__" are
+  // inherited, not catalogue entries.
+  if (Object.hasOwn(COMPATIBILITY_ALIASES, alias)) return COMPATIBILITY_ALIASES[alias];
   throw new Error(`refusal code ${JSON.stringify(alias)} is neither canonical nor a registered alias`);
 }
 
 export function refusalToDisclosedCode(internalCode: string | null, _policy: DisclosurePolicy): string {
   if (internalCode === null) return RefusalCode.PROOF_MISSING;
-  if (!(internalCode in INTERNAL_TO_DISCLOSED)) return RefusalCode.OUTCOME_UNKNOWN;
+  if (!Object.hasOwn(INTERNAL_TO_DISCLOSED, internalCode)) return RefusalCode.OUTCOME_UNKNOWN;
   return INTERNAL_TO_DISCLOSED[internalCode];
 }
 
@@ -179,7 +181,7 @@ export function refusalToInternalCode(internalCode: string | null, policy: Discl
 
 export function refusalToRetryable(internalCode: string | null): boolean {
   if (internalCode === null) return RETRYABLE[RefusalCode.PROOF_MISSING];
-  if (!(internalCode in RETRYABLE)) return true;
+  if (!Object.hasOwn(RETRYABLE, internalCode)) return true;
   return RETRYABLE[internalCode];
 }
 

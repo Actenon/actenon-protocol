@@ -6,7 +6,13 @@ import {
   PREFIXES,
 } from "../src/identifiers.js";
 import { canonicalizeJson, canonicalizeBytes, CanonicalisationError } from "../src/canonicalisation.js";
-import { RefusalCode, DisclosurePolicy, refusalToDisclosedCode } from "../src/refusal-codes.js";
+import {
+  RefusalCode,
+  DisclosurePolicy,
+  refusalToDisclosedCode,
+  refusalToRetryable,
+  resolveAlias,
+} from "../src/refusal-codes.js";
 import { ExecutionMode } from "../src/execution-modes.js";
 
 describe("identifiers", () => {
@@ -175,6 +181,14 @@ describe("refusal codes", () => {
 
   test("disclosed_code for REPLAY_DETECTED is REPLAY_DETECTED (safe to disclose)", () => {
     expect(refusalToDisclosedCode(RefusalCode.REPLAY_DETECTED, DisclosurePolicy.PUBLIC)).toBe("REPLAY_DETECTED");
+  });
+
+  test("unknown codes named like Object.prototype members are unknown, not inherited", () => {
+    for (const code of ["toString", "constructor", "__proto__", "hasOwnProperty"]) {
+      expect(refusalToDisclosedCode(code, DisclosurePolicy.PUBLIC)).toBe("OUTCOME_UNKNOWN");
+      expect(refusalToRetryable(code)).toBe(true);
+      expect(() => resolveAlias(code)).toThrow();
+    }
   });
 });
 
