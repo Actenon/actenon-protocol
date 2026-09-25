@@ -54,3 +54,18 @@ New vectors are added in MINOR protocol versions. Each new vector MUST:
 2. Have a `description` explaining what it tests.
 3. Be added under the correct category (valid/invalid).
 4. Be referenced in the CHANGELOG entry for the minor version.
+5. Be added to the hash lock with `python scripts/check_vector_lock.py --write`
+   (this rewrites `conformance/vectors.sha256`; review the diff — it must only
+   ADD lines).
+
+## Hash lock
+
+Every vector's SHA-256 is recorded in [`../vectors.sha256`](../vectors.sha256).
+CI (`verify-claims.yml`) runs `python scripts/check_vector_lock.py`, which fails
+if a locked vector's bytes change, a locked vector disappears, or a vector is
+present but not locked. Existing vectors are frozen: an implementation that
+passes them keeps passing them. Verify without Python:
+
+```bash
+cd conformance/vectors && sha256sum -c ../vectors.sha256
+```

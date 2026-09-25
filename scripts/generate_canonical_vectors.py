@@ -55,6 +55,12 @@ def write_invalid(name: str, description: str, *, note: str = "", input_json: st
     print(f"  invalid: {name}")
 
 
+def _write_vector(path: Path, vector: dict) -> None:
+    with path.open("w") as f:
+        json.dump(vector, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+
 def _build_nested(depth: int) -> dict:
     result = {"value": "bottom"}
     for _ in range(depth):
@@ -203,9 +209,18 @@ def main():
     write_invalid("unsupported_type_bytes",
         "Python bytes is not a JSON type. Python-only.",
         note="In Python, the test constructs b'hello' directly.")
-    write_invalid("deeply_nested_exceeds_limit",
-        "Object nested 33 levels deep (exceeds the 32-level limit). Python-only.",
-        note="In Python, the test constructs a 33-level nested dict.")
+    # Language-neutral since WO-5: the 33-level input is literal JSON, so
+    # every runtime (not only Python) can exercise the depth limit. Written
+    # directly to keep the committed (hash-locked) key order.
+    _write_vector(INVALID_DIR / "deeply_nested_exceeds_limit.json", {
+        "name": "deeply_nested_exceeds_limit",
+        "description": "Object nested 33 levels deep (exceeds the 32-level limit). Language-neutral: the input is embedded as literal JSON.",
+        "input_json": "{\"a\": " * 33 + "1" + "}" * 33,
+        "expected_error": "CanonicalisationError",
+        "expected_refusal_code": "CANONICALISATION_FAILURE",
+        "note": "The input_json field contains a 33-level nested object. Any language's JSON parser can parse it; the canonicaliser must reject it because depth 33 > 32.",
+    })
+    print("  invalid: deeply_nested_exceeds_limit")
     write_invalid("oversized_structure",
         "Structure whose canonical form exceeds 1 MiB. Python-only.",
         note="In Python, the test constructs a large string or array.")

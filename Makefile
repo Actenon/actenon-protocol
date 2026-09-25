@@ -34,7 +34,7 @@ compile-yaml:
 	$(PYTHON) scripts/compile_yaml_to_json.py
 
 # Machine-verify every claim the README makes about the package itself:
-# zero runtime deps, vector counts, version coherence, badge accuracy,
+# zero runtime deps, vector hash lock, version coherence, badge accuracy,
 # YAML<->JSON catalogue sync. This is the gate that protects credibility
 # for a trust product. Fails CI on any drift.
 verify-claims: compile-yaml-check
@@ -45,6 +45,8 @@ verify-claims: compile-yaml-check
 	        sys.exit(1) if deps else print('OK: zero runtime deps')"
 	@echo "==> Verifying YAML<->JSON catalogue sync"
 	@$(PYTHON) scripts/compile_yaml_to_json.py --check
+	@echo "==> Verifying conformance vector hash lock"
+	@$(PYTHON) scripts/check_vector_lock.py
 	@echo "==> Verifying Python badge in sync"
 	@$(PYTHON) scripts/sync_badges.py --check
 	@echo "==> Verifying README install instructions"

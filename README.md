@@ -25,6 +25,10 @@ makes about the package stops being true:
 - **Zero runtime dependencies** — read from `pyproject.toml`, not prose.
 - **The vector count** — "129 hash-locked test vectors" is compared against
   the actual files in [`conformance/vectors/`](conformance/vectors/).
+- **The hash lock** — every vector's SHA-256 is pinned in
+  [`conformance/vectors.sha256`](conformance/vectors.sha256)
+  (`sha256sum -c` format); a changed, deleted or unlisted vector fails
+  [`scripts/check_vector_lock.py`](scripts/check_vector_lock.py).
 - **The refusal catalogue** — the pre-compiled JSON the package ships is
   byte-checked against the human-editable YAML source of truth.
 - **Install commands** — every `pip install` / `npm install` in this README

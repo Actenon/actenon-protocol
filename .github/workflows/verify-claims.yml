@@ -71,6 +71,12 @@ jobs:
           print(f'OK: README vector count ({claimed}) matches conformance/vectors/ ({actual})')
           EOF
 
+      - name: Verify conformance vectors match their hash lock
+        # "Hash-locked" means every vector's SHA-256 is pinned in
+        # conformance/vectors.sha256: a changed, deleted or unlisted vector
+        # fails here. Only new vectors may be added to the lock.
+        run: python scripts/check_vector_lock.py
+
       - name: Check generated Python badge
         run: python scripts/sync_badges.py --check
 

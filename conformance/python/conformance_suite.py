@@ -1144,3 +1144,63 @@ class TestExecutionOutcome:
         assert ExecutionOutcome.REFUSED == "REFUSED"
         assert ExecutionOutcome.PARTIAL == "PARTIAL"
         assert ExecutionOutcome.UNKNOWN == "UNKNOWN"
+
+
+# ---------- 9. Vector hash lock ----------
+
+
+def _vector_lock_module():
+    """Import scripts/check_vector_lock.py (scripts/ is not a package)."""
+    import importlib.util
+
+    path = REPO_ROOT / "scripts" / "check_vector_lock.py"
+    spec = importlib.util.spec_from_file_location("check_vector_lock", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestVectorHashLock:
+    """The README calls the vectors "hash-locked": prove the lock bites."""
+
+    LOCK = REPO_ROOT / "conformance" / "vectors.sha256"
+
+    def _copy(self, tmp_path):
+        import shutil
+
+        vectors = tmp_path / "vectors"
+        shutil.copytree(VECTORS_DIR, vectors)
+        lock = tmp_path / "vectors.sha256"
+        shutil.copy(self.LOCK, lock)
+        return vectors, lock
+
+    def test_committed_vectors_match_lock(self):
+        problems = _vector_lock_module().check_lock(VECTORS_DIR, self.LOCK)
+        assert problems == []
+
+    def test_lock_covers_every_vector(self):
+        entries = _vector_lock_module().read_lock(self.LOCK)
+        on_disk = {p.relative_to(VECTORS_DIR).as_posix() for p in VECTORS_DIR.rglob("*.json")}
+        assert set(entries) == on_disk
+        assert len(entries) == 129
+
+    def test_tampered_vector_detected(self, tmp_path):
+        vectors, lock = self._copy(tmp_path)
+        target = vectors / "canonicalisation" / "valid" / "simple_object.json"
+        target.write_bytes(target.read_bytes().replace(b'"z": 1', b'"z": 2'))
+        problems = _vector_lock_module().check_lock(vectors, lock)
+        assert any("canonicalisation/valid/simple_object.json" in p for p in problems), problems
+
+    def test_whitespace_only_change_detected(self, tmp_path):
+        vectors, lock = self._copy(tmp_path)
+        target = vectors / "refusal" / "valid" / "replay_detected.v1.json"
+        target.write_bytes(target.read_bytes() + b" ")
+        assert _vector_lock_module().check_lock(vectors, lock)
+
+    def test_added_and_removed_vectors_detected(self, tmp_path):
+        vectors, lock = self._copy(tmp_path)
+        (vectors / "proof" / "valid" / "extra.v1.json").write_text("{}\n")
+        (vectors / "receipt" / "invalid" / "missing_target.v1.json").unlink()
+        problems = "\n".join(_vector_lock_module().check_lock(vectors, lock))
+        assert "proof/valid/extra.v1.json" in problems
+        assert "receipt/invalid/missing_target.v1.json" in problems
