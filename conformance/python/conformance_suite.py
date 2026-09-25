@@ -767,22 +767,101 @@ class TestExecutionModes:
                             f"vector {vector_name!r} in {cat}/{sub} missing execution_mode"
                         )
 
-    def test_mode_distinction_vectors(self):
-        """The execution-mode vectors prove that mode mismatch produces AUDIENCE_MISMATCH."""
-        for vector_name, vector in _load_vectors("execution-mode"):
-            proof_mode = vector["proof"]["execution_mode"]
-            verifier_mode = vector["verifier_mode"]
-            expected = vector["expected_outcome"]
-            if proof_mode == verifier_mode:
-                assert expected == "accepted", (
-                    f"vector {vector_name!r}: same mode should be accepted"
+    def test_execution_mode_vectors_are_all_exercised(self):
+        """All 10 execution-mode vectors exist and are run below.
+
+        The previous test globbed ``execution-mode/*.json`` while the vectors
+        live in ``execution-mode/valid/``, so it iterated zero times and
+        passed vacuously (it also expected keys no vector has).
+        """
+        vectors = _load_vectors("execution-mode", "valid")
+        assert len(vectors) == 10
+        assert not _load_vectors("execution-mode", "invalid")
+
+    @pytest.mark.parametrize(
+        "vector_name,vector",
+        _load_vectors("execution-mode", "valid"),
+        ids=[v[0] for v in _load_vectors("execution-mode", "valid")],
+    )
+    def test_execution_mode_vector(self, vector_name: str, vector: dict):
+        """Check each execution-mode vector against the reference implementation.
+
+        The vectors carry exactly one expectation:
+
+        * ``expected_mode`` — ``input.execution_mode`` parses to that mode.
+        * ``expected_validation`` on an ``{"execution_mode": ...}`` input —
+          the value must be present and satisfy the schema's execution_mode
+          definition (explicit, never inferred; a string enum).
+        * ``expected_validation`` / ``expected_finality`` on a
+          ``{"mode", "result"}`` input — the result is built with the
+          reference ``ExecutionResult`` models. These vectors use receipt
+          vocabulary: brokered success (``outcome: EXECUTED`` or a succeeded
+          ``provider_response_summary``) is observed only when a
+          ``provider_response_summary`` is present; resource-owned
+          ``outcome`` names the state (default ``SUCCEEDED``), and a
+          ``resource_signature`` is the verified resource receipt.
+        """
+        from actenon_protocol import (
+            BrokeredExecutionResult,
+            BrokeredExecutionState,
+            ExecutionResultValidationError,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+        )
+        from jsonschema import Draft202012Validator
+
+        expectations = {"expected_mode", "expected_validation", "expected_finality"} & set(vector)
+        assert len(expectations) == 1, f"{vector_name}: expected exactly one expectation key"
+        assert vector["name"] + ".v1.json" == vector_name
+        inp = vector["input"]
+
+        if "expected_mode" in vector:
+            assert ExecutionMode(inp["execution_mode"]) == vector["expected_mode"]
+            return
+
+        if "result" not in inp:
+            common = json.loads((SCHEMAS_DIR / "_common.v1.json").read_text())
+            mode_schema = common["$defs"]["execution_mode"]
+            valid = "execution_mode" in inp and Draft202012Validator(mode_schema).is_valid(
+                inp["execution_mode"]
+            )
+            assert valid == (vector["expected_validation"] == "valid"), vector_name
+            return
+
+        result = inp["result"]
+        common_fields = {
+            "verified_by": "verifier",
+            "executed_by": "executor",
+            "attempt_id": "exec_abcdef0123456789",
+            "occurred_at": "2026-07-21T12:00:00Z",
+        }
+        try:
+            if inp["mode"] == "brokered":
+                summary = result.get("provider_response_summary", {})
+                assert result.get("outcome") == "EXECUTED" or summary.get("status") == "succeeded"
+                built = BrokeredExecutionResult(
+                    state=BrokeredExecutionState.SUCCEEDED,
+                    provider_execution_observed="provider_response_summary" in result,
+                    **common_fields,
                 )
             else:
-                assert expected == "refused", (
-                    f"vector {vector_name!r}: mode mismatch should be refused"
+                assert inp["mode"] == "resource_owned"
+                signed = "resource_signature" in result
+                built = ResourceOwnedExecutionResult(
+                    state=ResourceOwnedExecutionState(result.get("outcome", "SUCCEEDED").lower()),
+                    provider_execution_observed=signed,
+                    resource_receipt_received=signed,
+                    resource_receipt_verified=signed,
+                    **common_fields,
                 )
-                assert vector["expected_disclosed_code"] == "PROOF_INVALID"
-                assert vector["expected_internal_code"] == "AUDIENCE_MISMATCH"
+        except ExecutionResultValidationError:
+            built = None
+
+        if "expected_finality" in vector:
+            assert built is not None, vector_name
+            assert built.finality == vector["expected_finality"], vector_name
+        else:
+            assert (built is not None) == (vector["expected_validation"] == "valid"), vector_name
 
 
 # ---------- 5b. Execution results (Prompt 9) ----------

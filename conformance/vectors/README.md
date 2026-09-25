@@ -35,7 +35,7 @@ Each vector is a JSON file with the shape:
 | `receipt/invalid/` | `ExecutionReceipt` artefacts that MUST fail validation. |
 | `refusal/valid/` | `ExecutionRefusal` artefacts that MUST validate (under their declared `disclosure_policy`). |
 | `refusal/invalid/` | `ExecutionRefusal` artefacts that MUST fail validation. |
-| `execution-mode/` | Mode-distinction vectors: a proof of mode X presented to a verifier of mode Y. |
+| `execution-mode/valid/` | Mode vectors: `execution_mode` must be explicit and a known string; mode-specific result rules (brokered success needs a provider observation, resource-owned success needs a resource signature) and state finality. Each carries one of `expected_mode`, `expected_validation` (four assert an **invalid** input despite the directory name) or `expected_finality`. |
 
 ## Cross-language consistency
 
