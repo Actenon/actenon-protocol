@@ -15,6 +15,7 @@ Run with: `python -m pytest conformance/python/ -v`
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -1283,3 +1284,77 @@ class TestVectorHashLock:
         problems = "\n".join(_vector_lock_module().check_lock(vectors, lock))
         assert "proof/valid/extra.v1.json" in problems
         assert "receipt/invalid/missing_target.v1.json" in problems
+
+
+# ---------- 10. Standalone runner (conformance/runner.py) ----------
+
+
+def _runner_module():
+    import importlib.util
+
+    path = REPO_ROOT / "conformance" / "runner.py"
+    spec = importlib.util.spec_from_file_location("actenon_conformance_runner", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses resolve their module by name
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestStandaloneRunner:
+    """The runner external implementers use to claim compatibility must not
+    certify a non-conformant implementation."""
+
+    def test_reference_passes_every_vector_exactly_once(self):
+        runner = _runner_module()
+        results = runner.ConformanceRunner(runner.ReferenceValidator()).run_all()
+        assert results.failures == []
+        assert results.total == 129  # was double-counted as 258
+        assert results.passed == 129
+        assert results.skipped == 0
+
+    def test_float_accepting_canonicaliser_is_not_compatible(self):
+        runner = _runner_module()
+
+        class AcceptsEverything(runner.ReferenceValidator):
+            def canonicalize(self, input_value):
+                try:
+                    return super().canonicalize(input_value)
+                except Exception:
+                    return json.dumps(input_value)
+
+            def parse_json(self, text):
+                return json.loads(text)
+
+        results = runner.ConformanceRunner(AcceptsEverything()).run_all("canonicalisation")
+        failed = {vr.vector.name for vr in results.failures}
+        assert {
+            "float_top_level",
+            "float_in_object",
+            "float_nan",
+            "deeply_nested_exceeds_limit",
+            "oversized_structure",
+            "duplicate_keys",
+        } <= failed
+
+    def test_execution_result_vectors_are_executed(self):
+        runner = _runner_module()
+
+        class AcceptsAnyResult(runner.ReferenceValidator):
+            def validate_execution_result(self, artefact):
+                return True, None
+
+        results = runner.ConformanceRunner(AcceptsAnyResult()).run_all("execution-result")
+        assert len(results.failures) == 4
+        assert all(vr.vector.sub == "invalid" for vr in results.failures)
+
+    def test_language_specific_vectors_are_skipped_not_passed(self):
+        runner = _runner_module()
+
+        class NoNativeInputs(runner.ReferenceValidator):
+            def language_specific_input(self, vector_name):
+                return runner.NOT_APPLICABLE
+
+        results = runner.ConformanceRunner(NoNativeInputs()).run_all("canonicalisation")
+        assert results.failed == 0
+        assert results.skipped == 3
+        assert results.passed == 34

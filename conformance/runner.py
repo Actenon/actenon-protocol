@@ -27,6 +27,19 @@ from pathlib import Path
 from typing import Any, Callable, Protocol
 
 VECTORS_DIR = Path(__file__).resolve().parent / "vectors"
+SCHEMAS_DIR = Path(__file__).resolve().parent.parent / "schemas"
+
+# Returned by Validator.language_specific_input() for canonicalisation vectors
+# whose input only exists as a native value in some languages (a Python set,
+# bytes, a non-string dict key). Such vectors are reported as SKIPPED, never
+# as passed.
+NOT_APPLICABLE = object()
+
+# Language-neutral forms of the two invalid canonicalisation vectors that
+# carry no input_json: a string whose canonical form (with its quotes)
+# exceeds the 1 MiB output limit, and an object with a duplicate key.
+OVERSIZED_INPUT_LENGTH = 1_048_576
+DUPLICATE_KEYS_JSON = '{"a": 1, "a": 2}'
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +98,20 @@ class Validator(Protocol):
         """Return (is_valid, error_message)."""
 
     def canonicalize(self, input_value: Any) -> str:
-        """Return the canonical bytes for the input."""
+        """Return the canonical form of the input, or raise if the profile
+        forbids it (floats, NaN, depth > 32, output > 1 MiB, ...)."""
+
+    def parse_json(self, text: str) -> Any:
+        """Parse JSON text the way the implementation parses untrusted input.
+        Raise on duplicate object keys and non-JSON constants (NaN, Infinity)."""
+
+    def language_specific_input(self, vector_name: str) -> Any:
+        """Return the native value for a language-specific invalid vector
+        (non_string_key, unsupported_type_set, unsupported_type_bytes), or
+        NOT_APPLICABLE if the language cannot express it."""
+
+    def validate_execution_result(self, artefact: dict) -> tuple[bool, str | None]:
+        """Return (is_valid, error_message) for an ExecutionResult artefact."""
 
     def validate_execution_mode(self, input_value: dict) -> tuple[bool, str | None]:
         """Return (is_valid, error_message) for execution-mode vectors."""
@@ -99,9 +125,9 @@ class ReferenceValidator:
     """Validator that uses the Python reference implementation."""
 
     def __init__(self):
-        from actenon_protocol import canonicalize_json, is_valid_identifier
+        from actenon_protocol import canonicalize_bytes, is_valid_identifier
         from actenon_protocol.types import ExecutionProof, ExecutionReceipt, ExecutionRefusal
-        self._canonicalize = canonicalize_json
+        self._canonicalize_bytes = canonicalize_bytes
         self._is_valid_id = is_valid_identifier
         self._Proof = ExecutionProof
         self._Receipt = ExecutionReceipt
@@ -139,7 +165,84 @@ class ReferenceValidator:
             return False, str(e)
 
     def canonicalize(self, input_value: Any) -> str:
-        return self._canonicalize(input_value)
+        # canonicalize_bytes, not canonicalize_json: the 1 MiB output limit
+        # is only enforced on the encoded form.
+        return self._canonicalize_bytes(input_value).decode("utf-8")
+
+    def parse_json(self, text: str) -> Any:
+        def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict:
+            obj: dict = {}
+            for key, value in pairs:
+                if key in obj:
+                    raise ValueError(f"duplicate object key {key!r}")
+                obj[key] = value
+            return obj
+
+        def reject_constant(name: str) -> Any:
+            raise ValueError(f"{name} is not valid JSON")
+
+        return json.loads(text, object_pairs_hook=reject_duplicates, parse_constant=reject_constant)
+
+    def language_specific_input(self, vector_name: str) -> Any:
+        return {
+            "non_string_key": {1: "a"},
+            "unsupported_type_set": {1, 2, 3},
+            "unsupported_type_bytes": b"hello",
+        }.get(vector_name, NOT_APPLICABLE)
+
+    def validate_execution_result(self, artefact: dict) -> tuple[bool, str | None]:
+        from actenon_protocol import (
+            BrokeredExecutionResult,
+            BrokeredExecutionState,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+        )
+        from jsonschema import Draft202012Validator
+        from referencing import Registry, Resource
+
+        schemas = {}
+        for path in SCHEMAS_DIR.glob("*.v1.json"):
+            schema = json.loads(path.read_text(encoding="utf-8"))
+            schemas[schema["$id"]] = schema
+        registry = Registry().with_resources(
+            (uri, Resource.from_contents(schema)) for uri, schema in schemas.items()
+        )
+        validator = Draft202012Validator(
+            schemas["urn:actenon:protocol:execution-result:v1"], registry=registry
+        )
+        errors = [e.message for e in validator.iter_errors(artefact)]
+        if errors:
+            return False, f"SCHEMA_INVALID: {errors[0]}"
+        try:
+            if artefact["mode"] == "brokered":
+                BrokeredExecutionResult(
+                    state=BrokeredExecutionState(artefact["state"]),
+                    verified_by=artefact["verified_by"],
+                    executed_by=artefact["executed_by"],
+                    provider_execution_observed=artefact["provider_execution_observed"],
+                    attempt_id=artefact["attempt_id"],
+                    occurred_at=artefact["occurred_at"],
+                    receipt_received=artefact.get("receipt_received", False),
+                    receipt_verified=artefact.get("receipt_verified", False),
+                    provider_evidence=artefact.get("provider_evidence", {}),
+                    reconciliation_status=artefact.get("reconciliation_status"),
+                )
+            else:
+                ResourceOwnedExecutionResult(
+                    state=ResourceOwnedExecutionState(artefact["state"]),
+                    verified_by=artefact["verified_by"],
+                    executed_by=artefact["executed_by"],
+                    attempt_id=artefact["attempt_id"],
+                    occurred_at=artefact["occurred_at"],
+                    provider_execution_observed=artefact.get("provider_execution_observed", False),
+                    resource_receipt_received=artefact.get("resource_receipt_received", False),
+                    resource_receipt_verified=artefact.get("resource_receipt_verified", False),
+                    resource_receipt=artefact.get("resource_receipt"),
+                    submission_reference=artefact.get("submission_reference"),
+                )
+        except Exception as e:
+            return False, str(e)
+        return True, None
 
     def validate_execution_mode(self, input_value: dict) -> tuple[bool, str | None]:
         mode = input_value.get("execution_mode") or input_value.get("mode")
@@ -163,6 +266,7 @@ class VectorResult:
     vector: Vector
     passed: bool
     reason: str | None = None
+    skipped: bool = False  # not applicable to this language; neither passed nor failed
 
 
 @dataclass
@@ -197,25 +301,52 @@ class ConformanceRunner:
         elif cat == "execution-mode":
             return self._run_execution_mode(vector)
         elif cat == "execution-result":
-            return VectorResult(vector, True, "execution-result vectors not yet implemented in runner")
+            return self._run_execution_result(vector)
         else:
             return VectorResult(vector, False, f"unknown category: {cat}")
 
     def _run_canonicalisation(self, vector: Vector) -> VectorResult:
-        input_value = vector.data.get("input")
-        expected = vector.data.get("expected_canonical")
-        if expected is None:
-            return VectorResult(vector, True, "no expected_canonical — skipping")
-        try:
-            actual = self.validator.canonicalize(input_value)
+        data = vector.data
+        if vector.sub == "valid":
+            expected = data.get("expected_canonical")
+            if "input" not in data or expected is None:
+                return VectorResult(vector, False, "malformed vector: needs input and expected_canonical")
+            try:
+                actual = self.validator.canonicalize(data["input"])
+            except Exception as e:
+                return VectorResult(vector, False, f"canonicalisation raised: {e}")
             if actual == expected:
                 return VectorResult(vector, True)
+            return VectorResult(vector, False, f"canonical mismatch: expected {expected!r}, got {actual!r}")
+
+        # Invalid vector: the implementation must REFUSE the input, either
+        # while parsing it or while canonicalising it. Every invalid vector
+        # is executed; none is passed without running.
+        try:
+            if "input_json" in data:
+                value = self.validator.parse_json(data["input_json"])
+            elif vector.name == "duplicate_keys":
+                value = self.validator.parse_json(DUPLICATE_KEYS_JSON)
+            elif vector.name == "oversized_structure":
+                value = "x" * OVERSIZED_INPUT_LENGTH
             else:
-                return VectorResult(vector, False, f"canonical mismatch: expected {expected!r}, got {actual!r}")
+                value = self.validator.language_specific_input(vector.name)
+                if value is NOT_APPLICABLE:
+                    return VectorResult(vector, True, "language-specific input", skipped=True)
+            self.validator.canonicalize(value)
         except Exception as e:
-            if vector.sub == "invalid":
-                return VectorResult(vector, True, f"correctly rejected: {e}")
-            return VectorResult(vector, False, f"canonicalisation raised: {e}")
+            return VectorResult(vector, True, f"correctly rejected: {type(e).__name__}: {e}")
+        return VectorResult(vector, False, "expected rejection, but the input was canonicalised")
+
+    def _run_execution_result(self, vector: Vector) -> VectorResult:
+        is_valid, error = self.validator.validate_execution_result(vector.data.get("artefact", {}))
+        if vector.data.get("expected_valid") is True:
+            if is_valid:
+                return VectorResult(vector, True)
+            return VectorResult(vector, False, f"expected valid but got error: {error}")
+        if not is_valid:
+            return VectorResult(vector, True, f"correctly rejected: {error}")
+        return VectorResult(vector, False, "expected invalid but was accepted")
 
     def _run_artefact(self, vector: Vector, validate_fn: Callable) -> VectorResult:
         artefact = vector.data.get("artefact", {})
@@ -291,11 +422,13 @@ class ConformanceRunner:
 
     def run_all(self, category: str | None = None) -> RunResults:
         vectors = load_vectors(category)
-        results = RunResults(total=len(vectors))
+        results = RunResults()
         for vector in vectors:
             vr = self.run_vector(vector)
             results.total += 1
-            if vr.passed:
+            if vr.skipped:
+                results.skipped += 1
+            elif vr.passed:
                 results.passed += 1
                 results.passes.append(vr)
             else:
@@ -332,6 +465,7 @@ Exit code:
             "total": results.total,
             "passed": results.passed,
             "failed": results.failed,
+            "skipped": results.skipped,
             "compatible": results.failed == 0,
             "failures": [
                 {
@@ -349,6 +483,7 @@ Exit code:
         print(f"Total:   {results.total}")
         print(f"Passed:  {results.passed}")
         print(f"Failed:  {results.failed}")
+        print(f"Skipped: {results.skipped} (language-specific inputs)")
         print()
 
         if args.verbose:
