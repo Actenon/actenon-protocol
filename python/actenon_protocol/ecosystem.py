@@ -24,7 +24,7 @@ The renderer rewrites only the text between::
 
 Inside that block it emits, in order:
 
-  (a) the four repo rows as a markdown table, with the row matching
+  (a) one markdown table row per ``repos:`` entry, with the row matching
       ``--repo`` marked ``← you are here``
   (b) a blank line
   (c) the ``Optional`` line, rendered from the ``optional:`` section of

@@ -116,6 +116,11 @@ jobs:
       - name: Check README registry installs
         run: python scripts/check_readme_installs.py
 
+      - name: Check the packaged ecosystem.yaml matches the canonical root copy
+        # The renderer (and every sibling repo's gate) reads the copy shipped
+        # in the wheel; the README links the root file as the source of truth.
+        run: cmp ecosystem.yaml python/actenon_protocol/data/ecosystem.yaml
+
       - name: Check README ecosystem table in sync with ecosystem.yaml
         # On protocol's own CI we install from the local checkout so the
         # renderer being tested is the one on this branch. Consumer repos

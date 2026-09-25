@@ -51,6 +51,8 @@ verify-claims: compile-yaml-check
 	@$(PYTHON) scripts/sync_badges.py --check
 	@echo "==> Verifying README install instructions"
 	@$(PYTHON) scripts/check_readme_installs.py
+	@echo "==> Verifying packaged ecosystem.yaml matches the root copy"
+	@cmp ecosystem.yaml python/actenon_protocol/data/ecosystem.yaml
 	@echo "==> Verifying ecosystem table"
 	@$(PYTHON) -m actenon_protocol.ecosystem --check README.md --repo actenon-protocol
 	@echo "==> All claims verified."

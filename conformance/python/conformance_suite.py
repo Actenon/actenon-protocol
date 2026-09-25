@@ -1419,3 +1419,28 @@ class TestReadmeClaims:
             assert path.exists(), (
                 f"README lists {path.relative_to(REPO_ROOT)}, which does not exist"
             )
+
+
+# ---------- 12. Packaged data copies ----------
+
+
+@pytest.mark.parametrize(
+    "source,packaged",
+    [
+        ("ecosystem.yaml", "ecosystem.yaml"),
+        ("refusals/catalogue.v1.yaml", "catalogue.v1.yaml"),
+        ("identifiers/prefixes.v1.yaml", "prefixes.v1.yaml"),
+    ]
+    + [
+        (f"schemas/{p.name}", p.name)
+        for p in sorted((REPO_ROOT / "python" / "actenon_protocol" / "data").glob("*.v1.json"))
+        if p.name != "catalogue.v1.json"  # compiled from YAML; checked by compile_yaml_to_json.py
+    ],
+)
+def test_packaged_data_matches_source(source: str, packaged: str):
+    """The wheel ships copies of the repo's source-of-truth files. A stale
+    copy means the installed package (and the ecosystem-table gate sibling
+    repos run from PyPI) disagrees with this repository."""
+    src = (REPO_ROOT / source).read_bytes()
+    dst = (REPO_ROOT / "python" / "actenon_protocol" / "data" / packaged).read_bytes()
+    assert src == dst, f"python/actenon_protocol/data/{packaged} is out of sync with {source}"
