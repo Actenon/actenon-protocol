@@ -41,9 +41,17 @@ jobs:
         working-directory: typescript
         run: bun test
 
+      - name: Build (tsc → dist/)
+        working-directory: typescript
+        run: bun run build
+
       - name: Verify package contents (npm pack dry-run)
         working-directory: typescript
         run: npm pack --dry-run
+
+      - name: Smoke-test npm pack output under plain Node.js
+        working-directory: typescript
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol-types canonicalizeJson canonicalizeBytes CanonicalisationError RefusalCode refusalToDisclosedCode resolveAlias PROTOCOL_VERSION isValidIdentifier ExecutionMode ExecutionOutcome
 
   publish:
     name: Publish to npm
@@ -68,6 +76,10 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN_ACTENON }}" > ~/.npmrc
           echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
           echo "always-auth=true" >> ~/.npmrc
+
+      - name: Build (tsc → dist/)
+        working-directory: typescript
+        run: bun run build
 
       - name: Publish @actenon/protocol-types
         working-directory: typescript

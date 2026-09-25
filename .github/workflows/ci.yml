@@ -90,6 +90,21 @@ jobs:
         working-directory: typescript
         run: bun test
 
+      - name: Set up Node.js (plain-Node import check)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build (tsc → dist/)
+        working-directory: typescript
+        run: bun run build
+
+      - name: Smoke-test npm pack output under plain Node.js
+        # The package used to ship only .ts source as main, which Node refuses
+        # (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING).
+        working-directory: typescript
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol-types canonicalizeJson canonicalizeBytes CanonicalisationError RefusalCode refusalToDisclosedCode resolveAlias PROTOCOL_VERSION isValidIdentifier ExecutionMode ExecutionOutcome
+
   typescript-runtime:
     name: TypeScript runtime (@actenon/protocol)
     runs-on: ubuntu-latest
@@ -132,3 +147,7 @@ jobs:
       - name: Verify package (npm pack dry-run)
         working-directory: typescript-runtime
         run: npm pack --dry-run
+
+      - name: Smoke-test npm pack output under plain Node.js
+        working-directory: typescript-runtime
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol canonicalize canonicalizeBytes canonicalizeJson parseStrict CanonicalisationError PROTOCOL_VERSION ACCEPTED_CANONICALISATION_PROFILES

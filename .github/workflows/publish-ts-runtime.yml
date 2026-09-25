@@ -74,6 +74,10 @@ jobs:
         working-directory: typescript-runtime
         run: npm pack --dry-run
 
+      - name: Smoke-test npm pack output under plain Node.js
+        working-directory: typescript-runtime
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol canonicalize canonicalizeBytes canonicalizeJson parseStrict CanonicalisationError PROTOCOL_VERSION ACCEPTED_CANONICALISATION_PROFILES
+
   publish:
     name: Publish to npm with provenance
     needs: verify
