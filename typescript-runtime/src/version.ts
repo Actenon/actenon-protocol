@@ -10,7 +10,8 @@
  * asserts the two copies agree.
  */
 
-export const PROTOCOL_VERSION = "1.0.0" as const;
+// Wire-protocol version; MUST equal python/actenon_protocol/version.py (tested).
+export const PROTOCOL_VERSION = "1.1.0" as const;
 
 export const CANONICALISATION_PROFILE = "ACTENON-JCS-STRICT-1" as const;
 

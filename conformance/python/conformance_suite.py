@@ -1200,6 +1200,36 @@ class TestVersionConstants:
     def test_protocol_version(self):
         assert PROTOCOL_VERSION == "1.1.0"
 
+    def test_dunder_version_is_the_package_version(self):
+        """__version__ is the distribution version (what pip reports); the wire
+        version is PROTOCOL_VERSION. It used to be PROTOCOL_VERSION ("1.1.0")
+        while the installed package was 1.3.0."""
+        import importlib.metadata
+        import re
+
+        import actenon_protocol
+
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        declared = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
+        assert actenon_protocol.__version__ == importlib.metadata.version("actenon-protocol")
+        assert actenon_protocol.__version__ == declared
+
+    def test_protocol_version_single_sourced(self):
+        """VERSIONING.md and both TypeScript packages state the same wire
+        version as version.py (TS said 1.0.0, so TS and Python producers
+        stamped different protocol_version values)."""
+        import re
+
+        versioning = (REPO_ROOT / "VERSIONING.md").read_text(encoding="utf-8")
+        assert (
+            re.search(r"\*\*Protocol version:\*\* `([^`]+)`", versioning).group(1)
+            == PROTOCOL_VERSION
+        )
+        for ts in ("typescript/src/version.ts", "typescript-runtime/src/version.ts"):
+            text = (REPO_ROOT / ts).read_text(encoding="utf-8")
+            m = re.search(r'PROTOCOL_VERSION = "([^"]+)"', text)
+            assert m and m.group(1) == PROTOCOL_VERSION, ts
+
     def test_canonicalisation_profile(self):
         assert CANONICALISATION_PROFILE == "ACTENON-JCS-STRICT-1"
 
