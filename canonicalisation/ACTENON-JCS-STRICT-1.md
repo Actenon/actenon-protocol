@@ -82,6 +82,7 @@ Integers are serialised as their decimal string representation:
 * No `+` sign.
 * Negative numbers use `-`.
 * Arbitrary precision is supported (Python: native `int`; TypeScript: `BigInt`).
+* TypeScript: a `number` is accepted only if `Number.isSafeInteger(value)` (within ±(2^53 − 1)); larger integers MUST be passed as `BigInt`. A `number` outside that range is rejected, because `toString()` would emit a rounded value (`2**60` → `1152921504606847000`) or exponent form (`1e21` → `1e+21`) rather than the integer's decimal digits.
 
 **Examples:** `0` → `"0"`, `42` → `"42"`, `-1` → `"-1"`, `123456789012345678901234567890` → `"123456789012345678901234567890"`.
 
@@ -203,6 +204,8 @@ The following inputs MUST be rejected with `CanonicalisationError`:
 | `tuple` in Python | Accepted as an array (for backward compat with the kernel); rejected in strict mode |
 | Custom objects (not a JSON type) | Not a JSON type |
 | `undefined` in JavaScript | Not a JSON type |
+| JavaScript objects that are not plain objects (`Date`, `Map`, `Set`, typed arrays, boxed primitives, class instances) and sparse arrays | Not a JSON type |
+| JavaScript `number` integers outside ±(2^53 − 1) | §4.5 — use `BigInt` |
 | Input deeper than 32 levels | §3.1 |
 | Canonical output exceeding 1 MiB | §3.1 |
 

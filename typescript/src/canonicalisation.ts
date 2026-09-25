@@ -69,26 +69,54 @@ function utf8ByteCompare(a: string, b: string): number {
   return aBytes.length - bBytes.length;
 }
 
+// Only plain objects are JSON objects. Date, Map, Set, typed arrays,
+// boxed primitives and class instances have no own enumerable data (or
+// the wrong data) and used to canonicalise as "{}" or {"0":..}: two
+// different Dates hashed identically. Reject them (profile §3.3, §6).
+function assertPlainObject(value: object): void {
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null || proto === Object.prototype) return;
+  // A plain object from another realm (vm context, iframe).
+  if (Object.getPrototypeOf(proto) === null && Object.prototype.toString.call(value) === "[object Object]") {
+    return;
+  }
+  const name = (proto && typeof proto.constructor === "function" && proto.constructor.name) || "unknown";
+  throw new CanonicalisationError(`unsupported value type for canonicalization: ${name} (not a plain JSON object)`);
+}
+
 function canonicalizeJsonImpl(value: unknown): string {
   if (value === null) return "null";
   if (value === true) return "true";
   if (value === false) return "false";
   if (typeof value === "bigint") return value.toString();
   if (typeof value === "number") {
-    if (Number.isInteger(value)) {
-      // Note: JS Number is a 64-bit float and can only represent integers
-      // up to 2^53 - 1 exactly. Larger integers must be passed as BigInt.
-      return value.toString();
+    if (!Number.isInteger(value)) {
+      throw new CanonicalisationError(
+        "floating-point values are not supported in ACTENON-JCS-STRICT-1; use integer cents or string-encoded decimals instead"
+      );
     }
-    throw new CanonicalisationError(
-      "floating-point values are not supported in ACTENON-JCS-STRICT-1; use integer cents or string-encoded decimals instead"
-    );
+    // JS Number is a 64-bit float and represents integers exactly only up
+    // to 2^53 - 1. Beyond that toString() prints a rounded value
+    // (2**60 -> "1152921504606847000") or exponent form (1e21 -> "1e+21"),
+    // neither of which is the integer's canonical decimal. Use BigInt.
+    if (!Number.isSafeInteger(value)) {
+      throw new CanonicalisationError(
+        `integer ${value} is outside the safe integer range ±(2^53 − 1); pass it as a BigInt`
+      );
+    }
+    return value.toString();
   }
   if (typeof value === "string") return canonicalizeString(value);
   if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      if (!(i in value)) {
+        throw new CanonicalisationError(`sparse arrays are not supported (hole at index ${i})`);
+      }
+    }
     return "[" + value.map(canonicalizeJsonImpl).join(",") + "]";
   }
   if (typeof value === "object") {
+    assertPlainObject(value);
     const obj = value as Record<string, unknown>;
     const keys = Object.keys(obj);
     // Validate before sorting: TextEncoder maps every lone surrogate to

@@ -117,6 +117,51 @@ describe("canonicalisation", () => {
   test("accepts properly paired surrogates", () => {
     expect(canonicalizeJson(JSON.parse('"\\ud83d\\ude00"'))).toBe('"\u{1F600}"');
   });
+
+  test("rejects Number integers outside the safe range (use BigInt)", () => {
+    // 1e21.toString() is "1e+21" and 2**60 prints as 1152921504606847000:
+    // neither is the integer the Python reference would emit.
+    for (const n of [1e21, 2 ** 60, 9007199254740992, -9007199254740992, Number.MAX_VALUE]) {
+      expect(() => canonicalizeJson(n)).toThrow(CanonicalisationError);
+      expect(() => canonicalizeJson({ amount: n })).toThrow(CanonicalisationError);
+    }
+    expect(canonicalizeJson(9007199254740991)).toBe("9007199254740991");
+    expect(canonicalizeJson(-9007199254740991)).toBe("-9007199254740991");
+    expect(canonicalizeJson(2n ** 60n)).toBe("1152921504606846976");
+  });
+
+  test("rejects values that are not JSON types instead of serialising them as {}", () => {
+    class Money {
+      amount = 1;
+    }
+    const notJson: unknown[] = [
+      new Date(0),
+      new Map([["a", 1]]),
+      new Set([1]),
+      new Uint8Array([1, 2]),
+      new ArrayBuffer(2),
+      /x/,
+      new Error("x"),
+      new Money(),
+      new String("x"),
+      new Number(1),
+      Promise.resolve(1),
+    ];
+    for (const v of notJson) {
+      expect(() => canonicalizeJson(v)).toThrow(CanonicalisationError);
+      expect(() => canonicalizeJson({ nested: [v] })).toThrow(CanonicalisationError);
+    }
+  });
+
+  test("rejects sparse arrays instead of emitting invalid JSON", () => {
+    expect(() => canonicalizeJson([1, , 3])).toThrow(CanonicalisationError);
+    expect(() => canonicalizeJson(new Array(2))).toThrow(CanonicalisationError);
+  });
+
+  test("accepts plain and null-prototype objects", () => {
+    expect(canonicalizeJson(Object.assign(Object.create(null), { b: 1, a: 2 }))).toBe('{"a":2,"b":1}');
+    expect(canonicalizeJson(JSON.parse('{"__proto__":{"x":1}}'))).toBe('{"__proto__":{"x":1}}');
+  });
 });
 
 describe("refusal codes", () => {

@@ -379,6 +379,21 @@ function run(): number {
     ["lone_surrogate_key", () => ({ "\uD800": 1 })],
     ["lone_surrogate_keys_tie", () => ({ "\uD801": 2, "\uD800": 1 })],
     ["lone_surrogate_via_parseStrict", () => parseStrict('{"s":"\\ud800"}')],
+    // Number integers outside ±(2^53 − 1) print as rounded or exponent
+    // form ("1e+21"), not the integer the Python reference emits.
+    ["unsafe_number_1e21", () => ({ amount: 1e21 })],
+    ["unsafe_number_2p60", () => ({ amount: 2 ** 60 })],
+    ["unsafe_number_2p53", () => 9007199254740992],
+    ["unsafe_number_via_JSON_parse", () => JSON.parse("123456789012345678901234567890")],
+    // Non-JSON object types used to canonicalise as "{}" (collisions).
+    ["date_object", () => ({ when: new Date(0) })],
+    ["map_object", () => ({ m: new Map([["a", 1]]) })],
+    ["set_object", () => new Set([1])],
+    ["typed_array", () => ({ b: new Uint8Array([104, 105]) })],
+    ["boxed_string", () => new String("x")],
+    ["class_instance", () => [new (class Money { amount = 1; })()]],
+    // Sparse arrays used to serialise as "[1,,3]" (invalid JSON).
+    ["sparse_array", () => [1, , 3]],
   ];
   for (const [name, make] of mustReject) {
     try {
