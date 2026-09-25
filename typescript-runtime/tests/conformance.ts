@@ -115,7 +115,11 @@ function run(): number {
         failed++;
       }
     }
-  } catch {}
+  } catch (e) {
+    // Never swallow: a vector that cannot be read or parsed is a failure.
+    console.log(`  FAIL  valid vectors: ${e instanceof Error ? e.message : String(e)}`);
+    failed++;
+  }
 
   // ── Invalid vectors ────────────────────────────────────────────
   try {
@@ -220,7 +224,11 @@ function run(): number {
         }
       }
     }
-  } catch {}
+  } catch (e) {
+    // Never swallow: a vector that cannot be read or parsed is a failure.
+    console.log(`  FAIL  invalid vectors: ${e instanceof Error ? e.message : String(e)}`);
+    failed++;
+  }
 
   // ── TypeScript-specific adversarial tests ─────────────────────
   const tsOnlyTests: Array<[string, () => void]> = [
