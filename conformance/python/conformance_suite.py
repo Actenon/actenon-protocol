@@ -1444,3 +1444,31 @@ def test_packaged_data_matches_source(source: str, packaged: str):
     src = (REPO_ROOT / source).read_bytes()
     dst = (REPO_ROOT / "python" / "actenon_protocol" / "data" / packaged).read_bytes()
     assert src == dst, f"python/actenon_protocol/data/{packaged} is out of sync with {source}"
+
+
+# ---------- 13. python -m actenon_protocol.conformance_canonicalisation ----------
+
+
+class TestCanonicalisationConformanceCommand:
+    def _run(self, *args, cwd):
+        import subprocess
+
+        return subprocess.run(
+            [sys.executable, "-m", "actenon_protocol.conformance_canonicalisation", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+        )
+
+    def test_runs_against_explicit_vectors_dir_from_anywhere(self, tmp_path):
+        vectors = VECTORS_DIR / "canonicalisation"
+        proc = self._run("--vectors", str(vectors), cwd=tmp_path)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "0 failed" in proc.stdout
+
+    def test_missing_vectors_is_a_clear_error_not_a_traceback(self, tmp_path, monkeypatch):
+        import actenon_protocol.conformance_canonicalisation as cli
+
+        monkeypatch.setattr(cli, "_default_candidates", lambda: [tmp_path / "nope"])
+        monkeypatch.chdir(tmp_path)
+        assert cli.main([]) == 2

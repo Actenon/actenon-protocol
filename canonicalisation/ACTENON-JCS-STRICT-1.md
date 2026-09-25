@@ -227,11 +227,19 @@ Both implementations MUST produce byte-identical output for all valid inputs. Th
 A reusable conformance command is available:
 
 ```bash
-# Python
+# Python — from a checkout of actenon-protocol
 python -m actenon_protocol.conformance_canonicalisation
 
-# TypeScript (from the typescript/ directory)
-bun run conformance.ts
+# Python — from anywhere else (the vectors are not shipped in the wheel)
+python -m actenon_protocol.conformance_canonicalisation --vectors path/to/conformance/vectors/canonicalisation
+
+# TypeScript (from the typescript-runtime/ or typescript/ directory)
+bun run tests/conformance.ts
 ```
 
-The command runs all normative vectors and reports pass/fail. Each repository in the Actenon ecosystem can invoke this command in CI to verify that its canonicalisation implementation produces the expected bytes.
+Each command runs the normative vectors against **that package's own**
+canonicaliser (the installed `actenon_protocol`, `@actenon/protocol`, or
+`@actenon/protocol-types`) and reports pass/fail. It does not test another
+repository's canonicaliser: an implementation with its own canonicaliser
+(e.g. a verifier SDK) must run the vectors against that code, for example
+by plugging it into `conformance/runner.py` (see `conformance/RUNNER_SPEC.md`).

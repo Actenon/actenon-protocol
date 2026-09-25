@@ -1,15 +1,16 @@
 """Reusable conformance command for ACTENON-JCS-STRICT-1 canonicalisation.
 
-Run from any Actenon repository:
-  python -m actenon_protocol.conformance_canonicalisation
+From a checkout of actenon-protocol:
+  python -m actenon_protocol.conformance_canonicalisation [--verbose]
 
-Or as a script:
-  python -m actenon_protocol.conformance_canonicalisation --verbose
+From anywhere else (the vectors are not shipped in the wheel), point it at a
+copy of conformance/vectors/canonicalisation/:
+  python -m actenon_protocol.conformance_canonicalisation --vectors PATH
 
-The command loads all normative vectors from conformance/vectors/canonicalisation/
-and verifies that the Python reference implementation produces the expected
-canonical bytes for valid vectors and raises CanonicalisationError for invalid
-vectors.
+The command loads the normative canonicalisation vectors and verifies that
+the INSTALLED actenon_protocol reference implementation produces the
+expected canonical bytes for valid vectors and raises CanonicalisationError
+for invalid vectors. It does not test another package's canonicaliser.
 
 Exit code 0 = all vectors passed.
 Exit code 1 = one or more vectors failed.
@@ -17,6 +18,7 @@ Exit code 1 = one or more vectors failed.
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -27,31 +29,32 @@ from actenon_protocol.canonicalisation import (
 )
 
 
+def _default_candidates() -> list[Path]:
+    pkg_dir = Path(__file__).resolve().parent
+    return [
+        # Editable install / source checkout: <repo>/python/actenon_protocol
+        pkg_dir.parent.parent / "conformance" / "vectors" / "canonicalisation",
+        # Current working directory is a checkout of actenon-protocol
+        Path.cwd() / "conformance" / "vectors" / "canonicalisation",
+    ]
+
+
 def _find_vectors_dir() -> Path:
     """Find the conformance vectors directory."""
-    # Try relative to the package location
-    pkg_dir = Path(__file__).resolve().parent
-    # The data dir is at actenon_protocol/data/ (installed) or the repo root
-    # is two levels up from the python package.
-    candidates = [
-        pkg_dir.parent.parent.parent / "conformance" / "vectors" / "canonicalisation",
-        pkg_dir / "data" / "canonicalisation",
-    ]
+    candidates = _default_candidates()
     for c in candidates:
-        if c.exists():
+        if (c / "valid").is_dir():
             return c
-    # Fallback: search from cwd
-    cwd_candidate = Path.cwd() / "conformance" / "vectors" / "canonicalisation"
-    if cwd_candidate.exists():
-        return cwd_candidate
     raise FileNotFoundError(
-        f"Could not find conformance vectors directory. Searched: {[str(c) for c in candidates + [cwd_candidate]]}"
+        "could not find the canonicalisation vectors (they are not shipped in the "
+        "wheel). Pass --vectors PATH/TO/conformance/vectors/canonicalisation. "
+        f"Searched: {[str(c) for c in candidates]}"
     )
 
 
-def run_conformance(verbose: bool = False) -> int:
+def run_conformance(verbose: bool = False, vectors_dir: Path | None = None) -> int:
     """Run all canonicalisation conformance vectors. Returns 0 on success, 1 on failure."""
-    vectors_dir = _find_vectors_dir()
+    vectors_dir = vectors_dir if vectors_dir is not None else _find_vectors_dir()
     valid_dir = vectors_dir / "valid"
     invalid_dir = vectors_dir / "invalid"
 
@@ -186,6 +189,31 @@ def run_conformance(verbose: bool = False) -> int:
     return 0 if failed == 0 else 1
 
 
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="python -m actenon_protocol.conformance_canonicalisation",
+        description="Run the ACTENON-JCS-STRICT-1 vectors against the installed reference.",
+    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="print every vector")
+    parser.add_argument(
+        "--vectors",
+        type=Path,
+        help="path to conformance/vectors/canonicalisation (required outside a checkout)",
+    )
+    args = parser.parse_args(argv)
+    try:
+        vectors_dir = args.vectors if args.vectors is not None else _find_vectors_dir()
+    except FileNotFoundError as e:
+        print(f"conformance_canonicalisation: {e}", file=sys.stderr)
+        return 2
+    if not (vectors_dir / "valid").is_dir() or not (vectors_dir / "invalid").is_dir():
+        print(
+            f"conformance_canonicalisation: {vectors_dir} has no valid/ and invalid/ vectors",
+            file=sys.stderr,
+        )
+        return 2
+    return run_conformance(verbose=args.verbose, vectors_dir=vectors_dir)
+
+
 if __name__ == "__main__":
-    verbose = "--verbose" in sys.argv or "-v" in sys.argv
-    sys.exit(run_conformance(verbose=verbose))
+    sys.exit(main())
