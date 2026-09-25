@@ -540,6 +540,22 @@ class TestRefusalCatalogue:
             f"enum-only: {enum_codes - catalogue_codes}"
         )
 
+    @pytest.mark.parametrize("policy", list(DisclosurePolicy))
+    def test_disclosed_code_matches_catalogue_for_every_code(self, policy):
+        """refusal_to_disclosed_code(code) is the catalogue's disclosed_code.
+
+        Includes the PROOF_INVALID umbrella, whose internal_code is null in
+        the catalogue: it used to fall through to OUTCOME_UNKNOWN, telling a
+        public caller "execution may have happened" for an invalid proof.
+        """
+        from actenon_protocol.refusal_codes import all_codes
+
+        for entry in all_codes():
+            assert refusal_to_disclosed_code(entry["code"], policy) == entry["disclosed_code"], (
+                entry["code"]
+            )
+            assert refusal_to_retryable(entry["code"]) is entry["retryable"], entry["code"]
+
     def test_public_safe_codes_subset_of_detailed_or_umbrella(self):
         # PUBLIC_SAFE_CODES includes umbrella codes (like PROOF_INVALID) that
         # have internal_code=null in the catalogue. DETAILED_CODES only

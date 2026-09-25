@@ -165,9 +165,12 @@ DETAILED_CODES: Final[frozenset[str]] = frozenset(
 # Map: alias (from existing actenon-kernel FailureCode enum) → canonical code.
 COMPATIBILITY_ALIASES: Final[dict[str, str]] = dict(_CATALOGUE["compatibility_aliases"])
 
-# Map: canonical internal_code → disclosed_code (public-safe umbrella).
-_INTERNAL_TO_DISCLOSED: Final[dict[str | None, str]] = {
-    code["internal_code"]: code["disclosed_code"] for code in _CATALOGUE["codes"]
+# Map: canonical code → disclosed_code (public-safe umbrella).
+# Keyed by ``code``, not ``internal_code``: the PROOF_INVALID umbrella has
+# internal_code null, so keying by internal_code dropped it and
+# refusal_to_disclosed_code("PROOF_INVALID") fell through to OUTCOME_UNKNOWN.
+_INTERNAL_TO_DISCLOSED: Final[dict[str, str]] = {
+    code["code"]: code["disclosed_code"] for code in _CATALOGUE["codes"]
 }
 
 # Map: canonical code → retryable boolean.
