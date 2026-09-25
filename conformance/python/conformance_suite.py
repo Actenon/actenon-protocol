@@ -1358,3 +1358,64 @@ class TestStandaloneRunner:
         assert results.failed == 0
         assert results.skipped == 3
         assert results.passed == 34
+
+
+# ---------- 11. README claims about the Python package ----------
+
+
+class TestReadmeClaims:
+    """Executable checks for README statements CI did not previously verify."""
+
+    README = REPO_ROOT / "README.md"
+
+    def _section(self, heading: str) -> str:
+        text = self.README.read_text(encoding="utf-8")
+        start = text.index(heading)
+        end = text.find("\n## ", start + len(heading))
+        return text[start : end if end != -1 else None]
+
+    def test_refusal_codes_named_in_readme_exist(self):
+        """Every code the README's refusal section names is a catalogue code
+        or a registered compatibility alias; disclosed-code examples are
+        public-safe codes."""
+        import re
+
+        from actenon_protocol import COMPATIBILITY_ALIASES
+
+        section = self._section("## Refusal taxonomy")
+        named = set(re.findall(r"`([A-Z][A-Z0-9_]{3,})`", section))
+        assert named, "no codes found in the refusal section"
+        known = {c.value for c in RefusalCode} | set(COMPATIBILITY_ALIASES)
+        assert named <= known, f"README names unknown refusal codes: {sorted(named - known)}"
+        disclosed_line = next(
+            line for line in section.splitlines() if line.startswith("- **`disclosed_code`**")
+        )
+        disclosed = set(re.findall(r"`([A-Z][A-Z0-9_]{3,})`", disclosed_line))
+        assert disclosed <= PUBLIC_SAFE_CODES, sorted(disclosed - PUBLIC_SAFE_CODES)
+
+    def test_python_usage_snippet_runs(self):
+        """The ```python block under "## Use" executes as written."""
+        section = self._section("## Use")
+        code = section.split("```python\n", 1)[1].split("```", 1)[0]
+        exec(compile(code, "README.md#use", "exec"), {})
+
+    def test_repo_layout_paths_exist(self):
+        """Every file or directory listed under "What's in this repo" exists."""
+        import re
+
+        block = self._section("## What's in this repo").split("```", 2)[1]
+        parent = None
+        for line in block.splitlines():
+            m = re.match(r"^(\s*)([\w.-]+/?)(\s|$)", line)
+            if not m or set(m.group(2)) == {"."}:  # skip "..." elisions
+                continue
+            indent, name = m.group(1), m.group(2)
+            if not indent:
+                parent = name if name.endswith("/") else None
+                path = REPO_ROOT / name
+            else:
+                assert parent, line
+                path = REPO_ROOT / parent / name
+            assert path.exists(), (
+                f"README lists {path.relative_to(REPO_ROOT)}, which does not exist"
+            )
