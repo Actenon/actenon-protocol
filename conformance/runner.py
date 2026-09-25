@@ -13,7 +13,7 @@ Usage:
     python conformance/runner.py --verbose          # show every vector
 
 Exit code:
-    0 — all vectors passed (Actenon-compatible v1.1.0)
+    0 — all vectors passed (Actenon-compatible v<installed actenon-protocol version>)
     1 — one or more vectors failed
 """
 
@@ -447,7 +447,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exit code:
-  0 — all vectors passed (Actenon-compatible v1.1.0)
+  0 — all vectors passed (Actenon-compatible v<installed actenon-protocol version>)
   1 — one or more vectors failed
         """,
     )
@@ -501,7 +501,9 @@ Exit code:
             print()
 
         if results.failed == 0:
-            print("✅ Actenon-compatible v1.1.0")
+            from actenon_protocol import __version__ as mark_version
+
+            print(f"✅ Actenon-compatible v{mark_version}")
         else:
             print(f"❌ {results.failed} vector(s) failed — not Actenon-compatible")
 

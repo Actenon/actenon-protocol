@@ -1536,3 +1536,32 @@ class TestCanonicalisationConformanceCommand:
         monkeypatch.setattr(cli, "_default_candidates", lambda: [tmp_path / "nope"])
         monkeypatch.chdir(tmp_path)
         assert cli.main([]) == 2
+
+
+def test_compatibility_mark_is_consistent_everywhere(monkeypatch):
+    """README (enforced by verify-claims), CONFORMANCE.md, RUNNER_SPEC.md,
+    the generator and the runner's own verdict name the same mark. The
+    runner printed "Actenon-compatible v1.1.0" while the docs promise v1.3.0."""
+    import contextlib
+    import io
+    import re
+
+    import actenon_protocol
+
+    mark = f"Actenon-compatible v{actenon_protocol.__version__}"
+    for rel in (
+        "README.md",
+        "CONFORMANCE.md",
+        "conformance/RUNNER_SPEC.md",
+        "conformance/generate_vectors.py",
+        "conformance/runner.py",
+    ):
+        text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        for found in re.findall(r"Actenon-compatible v\d+\.\d+\.\d+", text):
+            assert found == mark, f"{rel}: {found!r} != {mark!r}"
+    runner = _runner_module()
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        monkeypatch.setattr(sys, "argv", ["runner.py"])
+        runner.main()
+    assert f"✅ {mark}" in out.getvalue()
