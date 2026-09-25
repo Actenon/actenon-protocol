@@ -31,7 +31,28 @@ function validateDepth(value: unknown, maxDepth: number, currentDepth: number = 
   }
 }
 
+// Throw if `value` contains an unpaired UTF-16 surrogate. Such a string is
+// not a sequence of Unicode scalar values and has no UTF-8 encoding
+// (profile §4.2). JSON.stringify would emit it as a "\udXXX" escape and
+// TextEncoder would silently substitute U+FFFD, so neither may see it.
+function assertWellFormed(value: string): void {
+  for (let i = 0; i < value.length; i++) {
+    const c = value.charCodeAt(i);
+    if (c < 0xd800 || c > 0xdfff) continue;
+    const next = value.charCodeAt(i + 1);
+    if (c <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) {
+      i++;
+      continue;
+    }
+    throw new CanonicalisationError(
+      `strings must not contain unpaired UTF-16 surrogates (found U+${c.toString(16).toUpperCase()}); ` +
+        "they cannot be encoded as UTF-8"
+    );
+  }
+}
+
 function canonicalizeString(value: string): string {
+  assertWellFormed(value);
   // JSON.stringify with no whitespace, no ASCII escaping
   // Note: JSON.stringify produces the correct RFC 8259 escapes for
   // control characters and double-quotes. It does NOT \u-escape non-ASCII
@@ -69,7 +90,11 @@ function canonicalizeJsonImpl(value: unknown): string {
   }
   if (typeof value === "object") {
     const obj = value as Record<string, unknown>;
-    const keys = Object.keys(obj).sort(utf8ByteCompare);
+    const keys = Object.keys(obj);
+    // Validate before sorting: TextEncoder maps every lone surrogate to
+    // U+FFFD, so two distinct malformed keys would compare equal.
+    keys.forEach(assertWellFormed);
+    keys.sort(utf8ByteCompare);
     const pieces = keys.map((k) => `${canonicalizeString(k)}:${canonicalizeJsonImpl(obj[k])}`);
     return "{" + pieces.join(",") + "}";
   }

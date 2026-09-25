@@ -232,6 +232,48 @@ class TestCanonicalisationUnicodeAndOrdering:
         assert canonicalize_json({}) == "{}"
         assert canonicalize_json([]) == "[]"
 
+    def test_key_order_utf8_not_utf16(self):
+        """U+E000..U+FFFF sort BEFORE astral keys (UTF-8 byte order).
+
+        This is where the profile deviates from RFC 8785, which sorts by
+        UTF-16 code units and would put the astral key first.
+        """
+        assert canonicalize_json({"\U0001f600": 2, "\ue000": 1}) == '{"\ue000":1,"\U0001f600":2}'
+        assert canonicalize_json({"\U00010000": 2, "\uffff": 1}) == '{"\uffff":1,"\U00010000":2}'
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "\ud800",
+            "\udc00",
+            "x\udbffy",
+            "\ude00\ud83d",  # reversed pair: two unpaired surrogates
+            {"k": "\udfff"},
+            {"\ud800": 1},
+            {chr(0xD800): 1, chr(0xD801): 2},
+            [["\ud800"]],
+        ],
+    )
+    def test_lone_surrogates_rejected(self, value):
+        """Unpaired surrogates are not Unicode scalar values and have no
+        UTF-8 encoding (§4.2): both entry points must raise
+        CanonicalisationError, not UnicodeEncodeError, and must never
+        return a string that cannot be encoded.
+        """
+        with pytest.raises(CanonicalisationError):
+            canonicalize_json(value)
+        with pytest.raises(CanonicalisationError):
+            canonicalize_bytes(value)
+
+    def test_lone_surrogates_from_json_escapes_rejected(self):
+        """json.loads decodes "\\ud800" to a lone surrogate; it must not canonicalise."""
+        with pytest.raises(CanonicalisationError):
+            canonicalize_bytes(json.loads('{"s":"\\ud800"}'))
+
+    def test_surrogate_pair_accepted(self):
+        """A properly paired escape decodes to one astral scalar value."""
+        assert canonicalize_bytes(json.loads('"\\ud83d\\ude00"')) == '"\U0001f600"'.encode()
+
 
 # ---------- 2. Schema validation ----------
 

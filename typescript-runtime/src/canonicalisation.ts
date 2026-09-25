@@ -42,14 +42,12 @@ function validateDepth(value: unknown, maxDepth: number, currentDepth: number = 
 // ─── Key sorting ───────────────────────────────────────────────────────
 /**
  * Compare two strings by their UTF-8 byte representation, ascending.
- * This matches RFC 8785 §3.2.3 and the Python reference's
+ * This matches the Python reference's
  * `sorted(keys, key=lambda k: k.encode("utf-8"))`.
  *
- * For BMP characters, UTF-8 byte order coincides with code point order.
- * For astral characters (code points > U+FFFF), UTF-8 byte order also
- * coincides with code point order. So this comparison is equivalent to
- * sorting by Unicode code point — but we do it via UTF-8 bytes to match
- * the spec exactly.
+ * UTF-8 byte order coincides with Unicode code point order. It does NOT
+ * match RFC 8785 §3.2.3, which sorts by UTF-16 code units: the two differ
+ * when U+E000..U+FFFF is compared with an astral character (profile §4.1).
  *
  * Note: JavaScript's default Array.prototype.sort() on strings sorts by
  * UTF-16 code unit, which diverges from code point order for astral
@@ -72,10 +70,34 @@ function utf8ByteCompare(a: string, b: string): number {
  * - Non-ASCII characters appear as literal UTF-8 bytes (no \u escaping)
  *
  * JSON.stringify produces exactly this output by default (it does not
- * \u-escape non-ASCII), so we delegate to it.
+ * \u-escape non-ASCII), so we delegate to it — after rejecting unpaired
+ * surrogates, which JSON.stringify would emit as "\udXXX" escapes.
  */
 function canonicalizeString(value: string): string {
+  assertWellFormed(value);
   return JSON.stringify(value);
+}
+
+/**
+ * Throw if `value` contains an unpaired UTF-16 surrogate. Such a string is
+ * not a sequence of Unicode scalar values and has no UTF-8 encoding
+ * (profile §4.2). JSON.stringify would escape it and TextEncoder would
+ * silently substitute U+FFFD, so neither may see it.
+ */
+function assertWellFormed(value: string): void {
+  for (let i = 0; i < value.length; i++) {
+    const c = value.charCodeAt(i);
+    if (c < 0xd800 || c > 0xdfff) continue;
+    const next = value.charCodeAt(i + 1);
+    if (c <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) {
+      i++;
+      continue;
+    }
+    throw new CanonicalisationError(
+      `strings must not contain unpaired UTF-16 surrogates (found U+${c.toString(16).toUpperCase()}); ` +
+      "they cannot be encoded as UTF-8"
+    );
+  }
 }
 
 // ─── Core recursive canonicaliser ──────────────────────────────────────
@@ -105,7 +127,12 @@ function canonicalizeJsonImpl(value: unknown): string {
     // Reject non-string keys (RFC 8785 requires string keys).
     // In JS, object keys are always strings (or Symbols, which
     // Object.keys() excludes), so this check is belt-and-suspenders.
-    const keys = Object.keys(obj).sort(utf8ByteCompare);
+    const keys = Object.keys(obj);
+    // Validate before sorting: TextEncoder maps every lone surrogate to
+    // U+FFFD, so two distinct malformed keys would compare equal and the
+    // output would depend on insertion order.
+    keys.forEach(assertWellFormed);
+    keys.sort(utf8ByteCompare);
     const pieces = keys.map(
       (k) => `${canonicalizeString(k)}:${canonicalizeJsonImpl(obj[k])}`
     );

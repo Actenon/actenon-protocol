@@ -36,7 +36,9 @@ Before canonicalisation, the input MUST be validated:
 
 ### 4.1 Object key ordering
 
-Object keys MUST be sorted by their UTF-8 byte representation, ascending. This matches RFC 8785 §3.2.3. The sort is by **bytes**, not by Unicode code point or by locale. For the BMP this coincides with code point order; for astral characters (code points > U+FFFF), UTF-8 byte order also coincides with code point order, so the two agree.
+Object keys MUST be sorted by their UTF-8 byte representation, ascending. The sort is by **bytes**, not by locale. UTF-8 byte order is identical to Unicode code point order.
+
+**Deviation from RFC 8785.** RFC 8785 §3.2.3 sorts keys by their **UTF-16 code units**, which differs from UTF-8 byte order when a key contains a character in U+E000–U+FFFF and another key, at the same position, contains an astral character (> U+FFFF): UTF-16 puts the astral key first (its lead surrogate is 0xD800–0xDBFF), UTF-8 puts it last. Example: for the keys U+E000 and U+1F600 (😀), this profile emits the U+E000 key first, whereas an RFC 8785 library emits the 😀 key first (conformance test `key_order_utf8_not_utf16`). The UTF-8 rule is normative for this profile; an off-the-shelf RFC 8785 serialiser is **not** a conforming implementation without replacing its key comparator.
 
 **Python:** `sorted(value.keys(), key=lambda k: k.encode("utf-8"))`
 **TypeScript:** `Object.keys(obj).sort((a, b) => { const ab = new TextEncoder().encode(a); const bb = new TextEncoder().encode(b); for (let i = 0; i < Math.min(ab.length, bb.length); i++) { if (ab[i] !== bb[i]) return ab[i] - bb[i]; } return ab.length - bb.length; })`
@@ -44,6 +46,8 @@ Object keys MUST be sorted by their UTF-8 byte representation, ascending. This m
 ### 4.2 UTF-8
 
 All output MUST be UTF-8 encoded. String values are NOT `\u`-escaped — non-ASCII characters appear as their literal UTF-8 bytes. This matches RFC 8785 §3.2.2 ("no ASCII shortcuts").
+
+Strings (values and object keys) MUST consist of Unicode scalar values. A string containing an **unpaired UTF-16 surrogate** (U+D800–U+DFFF not part of a high/low pair — e.g. the result of parsing `"\ud800"`) has no UTF-8 encoding and MUST be rejected with `CanonicalisationError`. Implementations MUST NOT escape it as `\udXXX`, substitute U+FFFD, or drop it.
 
 **Python:** `json.dumps(value, ensure_ascii=False)`
 **TypeScript:** `JSON.stringify(value)` (JavaScript's `JSON.stringify` does not `\u`-escape non-ASCII by default).
@@ -194,6 +198,7 @@ The following inputs MUST be rejected with `CanonicalisationError`:
 | `NaN` | §4.15 |
 | `Infinity`, `-Infinity` | §4.15 |
 | Non-string dict keys (int, float, tuple, None) | §4.12 / RFC 8785 requires string keys |
+| Strings or object keys containing an unpaired UTF-16 surrogate | §4.2 — not encodable as UTF-8 |
 | `bytes`, `bytearray`, `set`, `frozenset` | Not a JSON type |
 | `tuple` in Python | Accepted as an array (for backward compat with the kernel); rejected in strict mode |
 | Custom objects (not a JSON type) | Not a JSON type |

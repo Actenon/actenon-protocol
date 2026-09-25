@@ -367,6 +367,46 @@ function run(): number {
     }
   }
 
+  // ── Must-reject inputs (direct values and strict-parsed text) ──
+  // Each case must throw CanonicalisationError from canonicalize().
+  const mustReject: Array<[string, () => unknown]> = [
+    // Unpaired surrogates have no UTF-8 encoding (profile §4.2); the
+    // Python reference raises. TS used to escape them as "\ud800" and,
+    // as keys, sort them in insertion order (TextEncoder ties on U+FFFD).
+    ["lone_high_surrogate", () => "\uD800"],
+    ["lone_low_surrogate", () => "x\uDC00y"],
+    ["reversed_surrogate_pair", () => "\uDE00\uD83D"],
+    ["lone_surrogate_key", () => ({ "\uD800": 1 })],
+    ["lone_surrogate_keys_tie", () => ({ "\uD801": 2, "\uD800": 1 })],
+    ["lone_surrogate_via_parseStrict", () => parseStrict('{"s":"\\ud800"}')],
+  ];
+  for (const [name, make] of mustReject) {
+    try {
+      const out = canonicalize(make());
+      console.log(`  FAIL  ${name}: expected CanonicalisationError but got ${new TextDecoder().decode(out)}`);
+      failed++;
+    } catch (e) {
+      if (e instanceof CanonicalisationError) {
+        passed++;
+      } else {
+        console.log(`  FAIL  ${name}: wrong error type: ${e instanceof Error ? e.constructor.name : typeof e}`);
+        failed++;
+      }
+    }
+  }
+
+  // ── Key order is UTF-8 bytes, not UTF-16 code units ───────────
+  {
+    const got = canonicalizeJson(parseStrict('{"\\ud83d\\ude00":2,"\\ue000":1}'));
+    const want = '{"\uE000":1,"\u{1F600}":2}';
+    if (got === want) {
+      passed++;
+    } else {
+      console.log(`  FAIL  key_order_utf8_not_utf16: expected ${want}, got ${got}`);
+      failed++;
+    }
+  }
+
   console.log(`\n${"=".repeat(60)}`);
   console.log(`Canonicalisation conformance (@actenon/protocol): ${passed} passed, ${failed} failed, ${skipped.length} skipped`);
   if (skipped.length > 0) {

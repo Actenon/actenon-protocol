@@ -5,7 +5,7 @@ import {
   normaliseIdentifier,
   PREFIXES,
 } from "../src/identifiers.js";
-import { canonicalizeJson, CanonicalisationError } from "../src/canonicalisation.js";
+import { canonicalizeJson, canonicalizeBytes, CanonicalisationError } from "../src/canonicalisation.js";
 import { RefusalCode, DisclosurePolicy, refusalToDisclosedCode } from "../src/refusal-codes.js";
 import { ExecutionMode } from "../src/execution-modes.js";
 
@@ -97,6 +97,25 @@ describe("canonicalisation", () => {
     const input = { z: 1, a: "hello", b: [true, null, 42] };
     const expected = '{"a":"hello","b":[true,null,42],"z":1}';
     expect(canonicalizeJson(input)).toBe(expected);
+  });
+
+  test("sorts keys by UTF-8 bytes, not UTF-16 code units", () => {
+    // U+E000 (EE 80 80) < U+1F600 (F0 9F 98 80) in UTF-8; UTF-16 order is the reverse.
+    expect(canonicalizeJson({ "\u{1F600}": 2, "\uE000": 1 })).toBe('{"\uE000":1,"\u{1F600}":2}');
+  });
+
+  test("rejects unpaired surrogates in values and keys", () => {
+    for (const v of ["\uD800", "\uDC00", "x\uDBFFy", "\uDE00\uD83D", { k: "\uDFFF" }, { "\uD800": 1 }, [["\uD800"]]]) {
+      expect(() => canonicalizeJson(v)).toThrow(CanonicalisationError);
+      expect(() => canonicalizeBytes(v)).toThrow(CanonicalisationError);
+    }
+    // Two distinct lone-surrogate keys must not produce insertion-order-dependent output.
+    expect(() => canonicalizeJson({ "\uD800": 1, "\uD801": 2 })).toThrow(CanonicalisationError);
+    expect(() => canonicalizeJson(JSON.parse('{"s":"\\ud800"}'))).toThrow(CanonicalisationError);
+  });
+
+  test("accepts properly paired surrogates", () => {
+    expect(canonicalizeJson(JSON.parse('"\\ud83d\\ude00"'))).toBe('"\u{1F600}"');
   });
 });
 
