@@ -557,6 +557,20 @@ class TestRefusalCatalogue:
             )
             assert refusal_to_retryable(entry["code"]) is entry["retryable"], entry["code"]
 
+    @pytest.mark.parametrize(
+        "kernel_code,canonical",
+        [
+            # Emitted by actenon-kernel but absent from the catalogue, so they
+            # disclosed as OUTCOME_UNKNOWN / retryable (E2E finding F12).
+            ("SCHEMA_INVALID", "MALFORMED_REQUEST"),  # actenon/core/errors.py
+            ("ESCROW_REFERENCE_MISSING", "MALFORMED_REQUEST"),  # protected_executor.py
+            ("EXECUTION_FAILED", "OUTCOME_UNKNOWN"),  # executor raised; effect unknown
+            ("POLICY_REFUSED", "POLICY_REFUSAL"),  # protected_executor.py default
+        ],
+    )
+    def test_emitted_kernel_codes_are_catalogued(self, kernel_code, canonical):
+        assert resolve_alias(kernel_code) == canonical
+
     @pytest.mark.parametrize("alias", sorted(__import__("actenon_protocol").COMPATIBILITY_ALIASES))
     def test_compatibility_aliases_disclose_like_their_canonical_code(self, alias):
         """Legacy kernel/permit codes must resolve BEFORE disclosure mapping.
