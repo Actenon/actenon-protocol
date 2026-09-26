@@ -1565,3 +1565,44 @@ def test_compatibility_mark_is_consistent_everywhere(monkeypatch):
         monkeypatch.setattr(sys, "argv", ["runner.py"])
         runner.main()
     assert f"✅ {mark}" in out.getvalue()
+
+
+# ---------- 14. Ecosystem table: never link a repository the public cannot open ----------
+
+
+class TestEcosystemOptionalLine:
+    """The Optional line is rendered into every sibling repo's README.
+
+    actenon-cloud is a private repository: linking it put a 404 into the
+    README of every public repo and turned their link checks red (or made
+    them add exclusions). An optional component without a public URL is
+    rendered as a plain name.
+    """
+
+    def test_optional_entry_without_url_renders_as_plain_name(self):
+        from actenon_protocol.ecosystem import _optional_line
+
+        line = _optional_line(
+            {"name": "x-private", "summary": "a thing", "licence": "private", "note": "Optional."}
+        )
+        assert line == "**Optional:** `x-private` — a thing (private). Optional."
+
+    def test_optional_entry_with_url_still_links(self):
+        from actenon_protocol.ecosystem import _optional_line
+
+        line = _optional_line(
+            {
+                "name": "x",
+                "url": "https://example.org/x",
+                "summary": "s",
+                "licence": "l",
+                "note": "n",
+            }
+        )
+        assert line == "**Optional:** [`x`](https://example.org/x) — s (l). n"
+
+    def test_rendered_table_does_not_link_the_private_cloud_repo(self):
+        pytest.importorskip("yaml")
+        from actenon_protocol.ecosystem import render_table
+
+        assert "github.com/Actenon/actenon-cloud" not in render_table("actenon-protocol")

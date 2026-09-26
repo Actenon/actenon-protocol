@@ -29,8 +29,7 @@ repos:
 
 optional:
   - name: actenon-cloud
-    url: https://github.com/Actenon/actenon-cloud
     summary: a managed control plane
-    licence: source-available; see its LICENSE
+    licence: private repository, not publicly available
     note: Not required by any component above; every capability in this ecosystem
           works without it.

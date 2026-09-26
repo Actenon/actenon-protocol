@@ -56,7 +56,7 @@ The Protocol is one of the independent repositories that together close the **ex
 | **`sdk-go`** | Go verifier SDK — protected-endpoint proof verification in Go | `actenon-protocol` | [repo](https://github.com/Actenon/sdk-go) |
 | **`sdk-rust`** | Rust verifier SDK — protected-endpoint proof verification in Rust | `actenon-protocol` | [repo](https://github.com/Actenon/sdk-rust) |
 
-**Optional:** [`actenon-cloud`](https://github.com/Actenon/actenon-cloud) — a managed control plane (source-available; see its LICENSE). Not required by any component above; every capability in this ecosystem works without it.
+**Optional:** `actenon-cloud` — a managed control plane (private repository, not publicly available). Not required by any component above; every capability in this ecosystem works without it.
 <!-- ECOSYSTEM-TABLE:END -->
 
 The Protocol is the **only** Actenon package that the other repositories share as a common dependency (`actenon-scan` depends on none) — and even that is by choice, not by force. Every artefact defined here is implementable in any language with no runtime dependencies on any Actenon code.
