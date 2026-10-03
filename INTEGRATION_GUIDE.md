@@ -1,4 +1,9 @@
-# Integration Guide — `actenon-protocol` v1.0.0
+# Integration Guide — `actenon-protocol` v1.0.0 (historical)
+
+> **Historical record.** This is the maintainers' adoption plan written when the protocol was
+> extracted at v1.0.0. Commits, audit IDs and repository names below are as they were then and are
+> not maintained. For the current protocol use [`README.md`](README.md), the normative documents in
+> [`protocol/`](protocol/) and [`CONFORMANCE.md`](CONFORMANCE.md).
 
 > How the four Actenon implementation repos adopt the neutral protocol.
 

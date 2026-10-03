@@ -310,7 +310,7 @@ openapi/             # OpenAPI 3.1 components
 
 ## Integration guide
 
-For the full adoption path — including how to wire the protocol into an existing service without pulling in any other Actenon repo — see [`INTEGRATION_GUIDE.md`](INTEGRATION_GUIDE.md). The short version: install this package, validate every incoming `Action Intent` + `ExecutionProof` against the JSON Schemas, canonicalise with `canonicalize_json`, and verify the proof signature against your configured issuer keys. That alone gives you protocol-conformant refusal — even before you adopt the Kernel, Permit, or Cloud.
+To wire the protocol into an existing service without pulling in any other Actenon repo: install this package, validate every incoming `Action Intent` + `ExecutionProof` against the JSON Schemas, canonicalise with `canonicalize_json`, and verify the proof signature against your configured issuer keys. That alone gives you protocol-conformant refusal — even before you adopt the Kernel, Permit, or Cloud.
 
 ## What the Protocol does NOT do
 
