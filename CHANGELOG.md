@@ -12,6 +12,48 @@ git tags, and PyPI carry). The **wire protocol** version is declared separately 
 (`PROTOCOL_VERSION`) and only changes when wire semantics change. The two may
 legitimately diverge; see VERSIONING.md § "Protocol version vs package version".
 
+## [1.4.0] — Unreleased
+
+### Added
+
+* **`protocol/13-edge-binding.md` (normative).** A protected edge enforces
+  what it declares about itself, after the signature verifies:
+  * **E1** — the intent's capability is in the edge's `scope_capabilities`,
+    compared exactly. An empty declaration refuses. Code
+    `SCOPE_CAPABILITY_MISMATCH`.
+  * **E2** — every edge `parameter_constraints` member is in the signed
+    `scope.parameter_constraints` and canonically equal. Code
+    `PARAMETER_MISMATCH`.
+  * **E3** — the signed target satisfies at least one edge
+    `resource_selectors` entry. Code `TARGET_MISMATCH`.
+  * **E4** — `scope.single_use` is `true`. Code `SCOPE_MODE_INVALID`.
+  * **E5** — a revocable `extensions.authority` is checked against the
+    issuer's revocation source. The edge fails closed when the source is
+    unknown or unreachable. Code `AUTHORITY_REVOKED`.
+* `05-proof.md` points to it.
+
+### Security
+
+* Verifiers that accepted and then ignored these context fields executed
+  actions outside what the edge declared. For example, an edge declaring
+  `payments.read` executed a `payments.refund` proof (kernel differential
+  corpus `kernel_diff_v1`). From 1.4.0 such verifiers are non-conformant.
+  Executable vectors live in actenon-kernel
+  (`edge_binding_cases.json`, `edge_revocation_cases.json`), and the Go and
+  Rust SDKs vendor them.
+
+### Versioning
+
+* Package MINOR. The wire `PROTOCOL_VERSION` is unchanged at `1.1.0`: no
+  field, schema or canonicalisation changed (see the Versioning note in
+  13-edge-binding.md).
+* Release step: set `pyproject.toml` to `1.4.0` and the "Actenon-compatible"
+  pass mark in README.md, CONFORMANCE.md, conformance/RUNNER_SPEC.md and
+  conformance/generate_vectors.py in the same commit.
+  `test_compatibility_mark_is_consistent_everywhere` enforces it. The
+  candidate branch stays at 1.3.0 so the pass mark is never printed for a
+  pre-release.
+
 ## [1.3.0] — 2026-07-24
 
 ### Fixed

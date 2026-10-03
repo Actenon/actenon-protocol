@@ -1,6 +1,11 @@
 # 13 — Edge binding: what the protected edge itself declares
 
-Status: **Normative** from protocol 1.4.0. Decision record: 2026-10-02.
+Status: **Normative** from actenon-protocol 1.4.0 (package version). Decision record: 2026-10-02.
+
+Versioning: these rules change what a verifier accepts, not the wire format. `scope_capabilities`, `parameter_constraints`
+and `resource_selectors` already existed as verifier context, and `extensions.authority` is a member of the existing open
+`extensions` object. The wire `PROTOCOL_VERSION` stays `1.1.0`. Under VERSIONING.md § Security-patch handling this is a
+MINOR package bump.
 
 ## Why this exists
 
