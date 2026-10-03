@@ -15,6 +15,11 @@ on:
     tags:
       - "ts-types-v*"
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to retry without moving or recreating it
+        required: true
+        type: string
 
 jobs:
   release-gate:
@@ -25,14 +30,28 @@ jobs:
     permissions:
       contents: read
       checks: read
+    outputs:
+      release_ref: ${{ steps.tag.outputs.release_ref || steps.retry.outputs.release_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Tag commit is on main and its required checks passed
+        id: tag
+        if: github.event_name != 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/release_gate.py gate --tag-prefix ts-types-v --version-from typescript/package.json
+        run: |
+          python3 scripts/release_gate.py gate --tag-prefix ts-types-v --version-from typescript/package.json
+          echo "release_ref=$GITHUB_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Validate the existing tagged source for a manual retry
+        id: retry
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: python3 scripts/prepare_npm_retry.py
 
   verify:
     needs: release-gate
@@ -41,6 +60,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-gate.outputs.release_ref }}
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -93,11 +114,16 @@ jobs:
     permissions:
       contents: read
       id-token: write  # npm provenance
-    environment: npm
-    if: startsWith(github.ref, 'refs/tags/ts-types-v')
+    # Normal publication remains restricted to release tags. A retry runs the
+    # repaired workflow from protected main, with a separate human review and
+    # the same release gate on the immutable, already tested source tag.
+    environment: ${{ github.event_name == 'workflow_dispatch' && 'npm-retry' || 'npm' }}
+    if: startsWith(github.ref, 'refs/tags/ts-types-v') || github.event_name == 'workflow_dispatch'
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-gate.outputs.release_ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -112,7 +138,7 @@ jobs:
       - name: Publish the tested tarball (with provenance)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_ACTENON }}
-        run: npm publish pkg/*.tgz --access public --provenance
+        run: npm publish ./pkg/*.tgz --access public --provenance
 
       - name: Install from the registry and import under plain Node.js
         run: |

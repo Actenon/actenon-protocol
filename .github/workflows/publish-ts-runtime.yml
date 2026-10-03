@@ -138,7 +138,7 @@ jobs:
       - name: Publish the tested tarball (with provenance)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_ACTENON }}
-        run: npm publish pkg/*.tgz --access public --provenance
+        run: npm publish ./pkg/*.tgz --access public --provenance
 
       - name: Install from the registry and import under plain Node.js
         run: |
