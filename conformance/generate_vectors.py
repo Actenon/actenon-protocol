@@ -2,7 +2,7 @@
 """Generate comprehensive conformance vectors for the Actenon protocol.
 
 This script generates the full set of test vectors that an external
-implementation must pass to claim "Actenon-compatible v1.3.0".
+implementation must pass to claim "Actenon-compatible v1.4.0".
 
 Vectors are written as individual JSON files under conformance/vectors/
 so they can be consumed by any language's test runner.

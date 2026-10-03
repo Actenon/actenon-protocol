@@ -2,11 +2,11 @@
 
 This document specifies how an external implementation of the Actenon
 protocol can run the conformance vectors and claim
-**"Actenon-compatible v1.3.0"**.
+**"Actenon-compatible v1.4.0"**.
 
 ## What "Actenon-compatible" means
 
-An implementation is Actenon-compatible v1.3.0 if, and only if, it:
+An implementation is Actenon-compatible v1.4.0 if, and only if, it:
 
 1. **Accepts** every vector in `conformance/vectors/*/valid/` as valid
    (schema-constructable, no validation errors).
@@ -126,7 +126,7 @@ For implementations in other languages (Go, Rust, TypeScript, etc.):
    `{"a": 1, "a": 2}`. `oversized_structure` is a string of 1,048,576 `x`
    characters. `non_string_key`, `unsupported_type_set` and
    `unsupported_type_bytes` only apply where the language can express them.
-6. If all vectors pass, your implementation is Actenon-compatible v1.3.0.
+6. If all vectors pass, your implementation is Actenon-compatible v1.4.0.
 
 ## Vector inventory
 

@@ -256,9 +256,9 @@ The protocol ships **129 hash-locked test vectors** across 6 categories:
 
 **129 vectors run on every PR** via the [CI workflow](.github/workflows/ci.yml), across Python 3.10 / 3.11 / 3.12, plus the TypeScript test suites (`typescript/` and `typescript-runtime/`).
 
-### External implementations — earn "Actenon-compatible v1.3.0"
+### External implementations — earn "Actenon-compatible v1.4.0"
 
-An external implementation is Actenon-compatible v1.3.0 if it accepts every valid vector and rejects every invalid vector. The [Runner Specification](conformance/RUNNER_SPEC.md) defines the interface, and the [standalone runner](conformance/runner.py) is a ready-to-use Python script that external implementations can subclass:
+An external implementation is Actenon-compatible v1.4.0 if it accepts every valid vector and rejects every invalid vector. The [Runner Specification](conformance/RUNNER_SPEC.md) defines the interface, and the [standalone runner](conformance/runner.py) is a ready-to-use Python script that external implementations can subclass:
 
 ```bash
 pip install -e ".[dev]"
