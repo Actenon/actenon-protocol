@@ -3,7 +3,7 @@
 > The neutral, open, implementation-independent boundary contract for proof-bound consequential execution. Defines the wire shape every Actenon artefact speaks. Zero runtime dependencies. Any language, any framework, any cloud.
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![Version: v1.3.0](https://img.shields.io/badge/Version-v1.3.0-blue.svg)](CHANGELOG.md)
+[![Version: v1.4.0](https://img.shields.io/badge/Version-v1.4.0-blue.svg)](CHANGELOG.md)
 <!-- PYTHON-BADGE:START -->
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 <!-- PYTHON-BADGE:END -->
@@ -68,8 +68,8 @@ The Protocol is the **only** Actenon package that the other repositories share a
 The Protocol defines the **wire format** that every Actenon component speaks. It is:
 
 - **Neutral** — no runtime dependencies, no framework assumptions, no cloud requirement, no opinion on how you implement verification.
-- **Versioned** — v1.3.0 (backward-compatible with v1.0.0–v1.2.0). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
-- **Cross-language** — Python (PyPI v1.3.0), TypeScript (npm v1.3.0), Go (`go get github.com/Actenon/sdk-go@v1.0.0`), and Rust (git dependency; crates.io pending) SDKs all conform to the same hash-locked conformance vectors. See [Multi-language SDKs](#multi-language-sdks--conformant-implementations) for the packaging status of each SDK.
+- **Versioned** — v1.4.0 (wire format backward-compatible with v1.0.0–v1.3.0; v1.4.0 adds normative edge-binding obligations for verifiers, see [`protocol/13-edge-binding.md`](protocol/13-edge-binding.md)). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
+- **Cross-language** — this repo's Python (PyPI) and TypeScript (npm) packages, plus the Go ([`Actenon/sdk-go`](https://github.com/Actenon/sdk-go)) and Rust ([`Actenon/sdk-rust`](https://github.com/Actenon/sdk-rust)) verifier SDKs, are tested against the same hash-locked conformance vectors. See [Multi-language SDKs](#multi-language-sdks--conformant-implementations) for the packaging status of each SDK.
 - **Hash-locked** — conformance vectors are versioned and frozen; an implementation that passes v1.0.0 vectors will keep passing them forever.
 - **Implementation-independent** — the same protocol can be implemented by Actenon, by a vendor, by an open-source competitor, or by an in-house team. Conformance, not pedigree, decides validity.
 
@@ -167,22 +167,20 @@ See [`identifiers/prefixes.v1.yaml`](identifiers/prefixes.v1.yaml).
 
 | Implementation | Status | Path |
 |---|---|---|
-| **Python reference** | Stable v1.3.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
-| **TypeScript types** | Stable v1.3.0 on npm | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
-| **Go SDK** | v1.0.0 — `go get github.com/Actenon/sdk-go@v1.0.0` | [`Actenon/sdk-go`](https://github.com/Actenon/sdk-go) |
-| **Rust SDK** | v0.1.0 — git dependency or `cargo add --git` | [`Actenon/sdk-rust`](https://github.com/Actenon/sdk-rust) (crates.io publish pending token) |
+| **Python reference** | Stable v1.4.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
+| **TypeScript types** | Stable v1.4.0 on npm | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
+| **Go SDK** | Separate repository; edge binding (protocol 13) requires sdk-go ≥ v1.1.0 | [`Actenon/sdk-go`](https://github.com/Actenon/sdk-go) — install instructions in its README |
+| **Rust SDK** | Separate repository; edge binding (protocol 13) requires `actenon-verifier-sdk` ≥ 0.2.0 | [`Actenon/sdk-rust`](https://github.com/Actenon/sdk-rust) — install instructions in its README |
 | **OpenAPI 3.1 components** | Stable | [`openapi/components.yaml`](openapi/components.yaml) — drop into any OpenAPI-aware toolchain |
 | **JSON Schemas** | Stable v1 | [`schemas/`](schemas/) — validate any artefact in any language |
 
 **Honest status:** the wire protocol is fully cross-language — the
 conformance vectors are hash-locked JSON that any language can pass. The
-*packaging* is now at near-parity: Python and TypeScript are both at v1.3.0
-on their respective registries. Go is at v1.0.0 and can be installed with
-`go get github.com/Actenon/sdk-go@v1.0.0`. Rust is at v0.1.0 as a git
-dependency (`cargo add --git https://github.com/Actenon/sdk-rust`);
-crates.io publication is prepared (Cargo.toml has all required fields,
-publish workflow is in place) and will complete once the
-`CARGO_REGISTRY_TOKEN` secret is added to the sdk-rust repo.
+*packaging* of this repository is Python (PyPI) and TypeScript types (npm),
+both at v1.4.0. The Go and Rust verifier SDKs are versioned and released from
+their own repositories; each SDK's README states its current release and
+install command. The TypeScript canonicaliser in `typescript-runtime/`
+(`@actenon/protocol`) is not yet published to npm and is used from source.
 
 Every implementation runs against the same hash-locked conformance vectors in [`conformance/vectors/`](conformance/vectors/). Conformance, not pedigree, decides validity.
 
@@ -281,7 +279,7 @@ Vectors are generated by [`conformance/generate_vectors.py`](conformance/generat
 2. **Canonicalisation is deterministic** — `ACTENON-JCS-STRICT-1` (RFC 8785 subset), sorted keys, no whitespace, floats rejected, duplicate keys rejected.
 3. **Refusal codes have two layers** — public-safe umbrella (`PROOF_INVALID`) + trusted detail (`AUDIENCE_MISMATCH`).
 4. **Results are discriminated** — brokered and resource-owned results have disjoint field sets.
-5. **Backward-compatible** — v1.3.0 is purely additive over v1.0.0–v1.2.0.
+5. **Backward-compatible wire format** — v1.4.0 changes no field, schema or canonicalisation of v1.0.0–v1.3.0. It adds normative verifier obligations (edge binding E1–E5), so a verifier that ignored edge declarations is no longer conformant.
 6. **Hash-locked** — conformance vectors are versioned and frozen.
 7. **No ambient authority** — no field implies trust in an issuer, signer, or control plane. Trust is configured by the verifier.
 
@@ -306,7 +304,7 @@ refusals/            # Refusal-code catalogue (catalogue.v1.yaml)
 conformance/         # Hash-locked conformance vectors + Python suite
 python/              # Python reference implementation (pydantic models)
 typescript/          # TypeScript types (@actenon/protocol-types)
-typescript-runtime/  # Compiled TypeScript canonicaliser (@actenon/protocol)
+typescript-runtime/  # Compiled TypeScript canonicaliser (@actenon/protocol; not yet on npm)
 openapi/             # OpenAPI 3.1 components
 ```
 
