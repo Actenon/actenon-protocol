@@ -29,6 +29,18 @@ from typing import Any, Callable, Protocol
 VECTORS_DIR = Path(__file__).resolve().parent / "vectors"
 SCHEMAS_DIR = Path(__file__).resolve().parent.parent / "schemas"
 
+
+def schema_files() -> list[Path]:
+    """The JSON Schemas: the checkout's schemas/ when present, else the copies the
+    installed actenon-protocol package ships (so a runner copied out of the
+    repository, as external implementations do, still works)."""
+    if SCHEMAS_DIR.is_dir():
+        return sorted(SCHEMAS_DIR.glob("*.v1.json"))
+    from importlib.resources import files
+
+    data = Path(str(files("actenon_protocol") / "data"))
+    return sorted(p for p in data.glob("*.v1.json") if p.name != "catalogue.v1.json")
+
 # Returned by Validator.language_specific_input() for canonicalisation vectors
 # whose input only exists as a native value in some languages (a Python set,
 # bytes, a non-string dict key). Such vectors are reported as SKIPPED, never
@@ -201,7 +213,7 @@ class ReferenceValidator:
         from referencing import Registry, Resource
 
         schemas = {}
-        for path in SCHEMAS_DIR.glob("*.v1.json"):
+        for path in schema_files():
             schema = json.loads(path.read_text(encoding="utf-8"))
             schemas[schema["$id"]] = schema
         registry = Registry().with_resources(

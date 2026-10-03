@@ -30,7 +30,25 @@ permissions:
   id-token: write  # Required for npm provenance (OIDC)
 
 jobs:
+  release-gate:
+    # Publish only the exact ts-runtime-v<version> tag, on a commit that is on main
+    # and whose required checks (.github/required-checks.json "release") passed.
+    name: Release gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag commit is on main and its required checks passed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/release_gate.py gate --tag-prefix ts-runtime-v --version-from typescript-runtime/package.json
+
   verify:
+    needs: release-gate
     name: Build + test @actenon/protocol
     runs-on: ubuntu-latest
 
@@ -78,10 +96,26 @@ jobs:
         working-directory: typescript-runtime
         run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol canonicalize canonicalizeBytes canonicalizeJson parseStrict CanonicalisationError PROTOCOL_VERSION ACCEPTED_CANONICALISATION_PROFILES
 
+      - name: Pack the tarball that will be published
+        working-directory: typescript-runtime
+        run: |
+          mkdir -p "$RUNNER_TEMP/pkg"
+          npm pack --pack-destination "$RUNNER_TEMP/pkg"
+
+      - name: The exact tarball imports under plain Node.js
+        run: bash scripts/smoke-npm-installed.sh "$(ls "$RUNNER_TEMP"/pkg/*.tgz)" @actenon/protocol canonicalize canonicalizeBytes canonicalizeJson parseStrict CanonicalisationError PROTOCOL_VERSION ACCEPTED_CANONICALISATION_PROFILES
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          path: ${{ runner.temp }}/pkg/
+          if-no-files-found: error
+
   publish:
     name: Publish to npm with provenance
     needs: verify
     runs-on: ubuntu-latest
+    environment: npm
     if: startsWith(github.ref, 'refs/tags/ts-runtime-v')
 
     permissions:
@@ -91,37 +125,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.x
-
-      - name: Set up Node.js (for npm publish)
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Install dependencies
-        working-directory: typescript-runtime
-        run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarball
+          path: pkg
 
-      - name: Build (tsc → dist/)
-        working-directory: typescript-runtime
-        run: bun run build
-
-      - name: Publish @actenon/protocol with provenance
-        working-directory: typescript-runtime
-        run: npm publish --access public --provenance
+      - name: Publish the tested tarball (with provenance)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_ACTENON }}
-          # NOTE: --provenance uses GitHub OIDC, not this token. The token
-          # is still required for npm auth until the package is configured
-          # for keyless provenance. Once configured, this can be removed.
+        run: npm publish pkg/*.tgz --access public --provenance
 
-      - name: Verify publication
+      - name: Install from the registry and import under plain Node.js
         run: |
-          sleep 5
-          PACKAGE_VERSION=$(node -p "require('./typescript-runtime/package.json').version")
-          echo "Published @actenon/protocol@${PACKAGE_VERSION}"
-          echo "View at: https://www.npmjs.com/package/@actenon/protocol/v/${PACKAGE_VERSION}"
+          version="$(node -p "require('./typescript-runtime/package.json').version")"
+          for _ in $(seq 1 30); do
+            npm view "@actenon/protocol@${version}" version >/dev/null 2>&1 && break
+            sleep 10
+          done
+          bash scripts/smoke-npm-installed.sh "@actenon/protocol@${version}" @actenon/protocol canonicalize canonicalizeBytes canonicalizeJson parseStrict CanonicalisationError PROTOCOL_VERSION ACCEPTED_CANONICALISATION_PROFILES

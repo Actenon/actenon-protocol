@@ -7,7 +7,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  release-gate:
+    # Publish only the exact v<version> tag, on a commit that is on main
+    # and whose required checks (.github/required-checks.json "release") passed.
+    name: Release gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag commit is on main and its required checks passed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/release_gate.py gate --tag-prefix v --version-from pyproject.toml
+
   build:
+    needs: release-gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,3 +65,27 @@ jobs:
           print-hash: true
     env:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+
+  verify-registry:
+    # Post-publish: install the released version from PyPI into a clean venv and
+    # run this commit's conformance runner against the installed package.
+    name: Install from PyPI and run conformance
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/checkout@v4
+      - run: |
+          version="$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          for _ in $(seq 1 30); do
+            curl -sf "https://pypi.org/pypi/actenon-protocol/${version}/json" >/dev/null && break
+            sleep 20
+          done
+          python3 -m venv "$RUNNER_TEMP/v"
+          "$RUNNER_TEMP/v/bin/pip" install "actenon-protocol[types]==${version}" jsonschema  # the runner validates against the JSON Schemas
+          cp -r conformance "$RUNNER_TEMP/conformance"
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/v/bin/python" -c "import actenon_protocol; assert 'site-packages' in actenon_protocol.__file__"
+          "$RUNNER_TEMP/v/bin/python" conformance/runner.py
