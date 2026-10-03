@@ -13,6 +13,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 INSTALL_RE = re.compile(r"(?P<tool>pip|npm)\s+install\s+(?P<args>[^`\n|]+)")
+GO_GET_RE = re.compile(r"go\s+get\s+(?P<module>[^\s`@]+)@(?P<version>[^\s`|]+)")
 PYPI_NAME_RE = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]]+\])?")
 
 
@@ -70,6 +71,34 @@ def npm_version(spec: str) -> str:
     return tags["latest"]
 
 
+def go_get_specs(readme: str) -> set[tuple[str, str]]:
+    return {(m.group("module"), m.group("version")) for m in GO_GET_RE.finditer(readme)}
+
+
+def _goproxy_escape(path: str) -> str:
+    # https://go.dev/ref/mod#goproxy-protocol: upper-case letters become "!" + lower-case.
+    return "".join(f"!{c.lower()}" if c.isupper() else c for c in path)
+
+
+def go_module_check(module: str, version: str) -> str:
+    """Fetch the module's go.mod from proxy.golang.org and require that the
+    `module` directive equals the path the README tells users to `go get`.
+    Module paths are case-sensitive: `go get github.com/actenon/x` fails with
+    "module declares its path as: github.com/Actenon/x"."""
+    url = f"https://proxy.golang.org/{_goproxy_escape(module)}/@v/{quote(version, safe='')}.mod"
+    request = Request(url, headers={"User-Agent": "actenon-readme-install-check/1"})
+    with urlopen(request, timeout=30) as response:
+        gomod = response.read().decode("utf-8")
+    declared = next(
+        (line.split()[1] for line in gomod.splitlines() if line.startswith("module ")), None
+    )
+    if declared != module:
+        raise ValueError(
+            f"`go get {module}@{version}` fails: the module declares its path as {declared!r}"
+        )
+    return declared
+
+
 def main() -> int:
     readme = Path(__file__).resolve().parents[1] / "README.md"
     try:
@@ -82,12 +111,16 @@ def main() -> int:
             print(f"  pip install {spec} -> {name} {version}")
         for spec in sorted(npm_specs):
             print(f"  npm install {spec} -> {spec} {npm_version(spec)}")
+        go_specs = go_get_specs(readme.read_text())
+        for module, version in sorted(go_specs):
+            go_module_check(module, version)
+            print(f"  go get {module}@{version} -> module path matches go.mod")
         for command in sorted(set(local_commands)):
             print(f"  local command (not a registry lookup): {command}")
     except (HTTPError, OSError, URLError, ValueError) as error:
         print(f"README install check failed: {error}", file=sys.stderr)
         return 1
-    print(f"Validated {len(pip_specs) + len(npm_specs)} registry install command(s)")
+    print(f"Validated {len(pip_specs) + len(npm_specs) + len(go_specs)} registry install command(s)")
     return 0
 
 

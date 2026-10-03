@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:execution-result:v1",
+  "title": "ExecutionResult",
+  "description": "Discriminated result of an execution attempt. Protocol version 1.0.0. The 'mode' field discriminates between BrokeredExecutionResult and ResourceOwnedExecutionResult. Each mode has its own state machine; the states MUST NOT be mixed. See protocol/03-execution-modes.md and protocol/12-execution-results.md.",
+  "type": "object",
+  "oneOf": [
+    {"$ref": "#/$defs/brokered_execution_result"},
+    {"$ref": "#/$defs/resource_owned_execution_result"}
+  ],
+  "$defs": {
+    "brokered_execution_state": {
+      "type": "string",
+      "enum": ["succeeded", "failed", "refused", "outcome_unknown"],
+      "description": "Terminal state of a brokered execution. 'succeeded' = provider execution was observed and returned a success response. 'failed' = provider execution was observed and returned a failure. 'refused' = the broker refused to execute (proof invalid, action out of scope, credential missing, etc.) - no provider call was attempted. 'outcome_unknown' = the provider call was attempted but the outcome could not be determined (timeout, partial response, reconciliation pending)."
+    },
+    "resource_owned_execution_state": {
+      "type": "string",
+      "enum": ["submitted", "accepted", "refused", "succeeded", "failed", "outcome_unknown"],
+      "description": "Terminal state of a resource-owned execution. 'submitted' = the request+proof were submitted to the resource boundary but no ack has been received. 'accepted' = the resource accepted the request but has not yet completed execution. 'refused' = the resource refused the request (proof invalid, action out of scope, resource policy denied). 'succeeded' = the resource executed the action and returned a verifiable receipt. 'failed' = the resource executed the action and it failed. 'outcome_unknown' = the resource returned no receipt or an unverifiable receipt; the final state cannot be determined. 'submitted' and 'accepted' are NOT success states - submission is not execution."
+    },
+    "finality_status": {
+      "type": "string",
+      "enum": ["final", "non_final"],
+      "description": "Whether the result represents a final outcome. 'final' = no further state transitions are expected; the outcome is authoritative. 'non_final' = the outcome may change as reconciliation or resource receipts arrive. 'succeeded', 'failed', and 'refused' are final in both modes. 'outcome_unknown' is non_final. 'submitted' and 'accepted' (resource_owned only) are non_final."
+    },
+    "brokered_execution_result": {
+      "type": "object",
+      "required": [
+        "mode",
+        "state",
+        "finality",
+        "verified_by",
+        "executed_by",
+        "provider_execution_observed",
+        "receipt_received",
+        "receipt_verified",
+        "attempt_id",
+        "occurred_at"
+      ],
+      "properties": {
+        "mode": {"const": "brokered"},
+        "state": {"$ref": "#/$defs/brokered_execution_state"},
+        "finality": {"$ref": "#/$defs/finality_status"},
+        "verified_by": {
+          "type": "string",
+          "description": "Identifier of the component that verified the proof. Example: 'actenon-permit-broker', 'actenon-kernel-verifier'."
+        },
+        "executed_by": {
+          "type": "string",
+          "description": "Identifier of the component that invoked the provider. In brokered mode this is the broker. Example: 'actenon-permit-broker'."
+        },
+        "provider_execution_observed": {
+          "type": "boolean",
+          "description": "True if the broker observed the provider's response (success or failure). False if the call timed out, returned a partial response, or never returned. 'succeeded' and 'failed' require this to be true."
+        },
+        "receipt_received": {
+          "type": "boolean",
+          "description": "True if a receipt was issued for this execution. Brokered mode always issues a receipt on observed outcomes."
+        },
+        "receipt_verified": {
+          "type": "boolean",
+          "description": "True if the receipt was cryptographically verified. False if no receipt was issued or verification failed."
+        },
+        "attempt_id": {
+          "type": "string",
+          "description": "The execution attempt id, matching the receipt's execution_attempt_id. MUST use the 'exec_' prefix."
+        },
+        "occurred_at": {"$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"},
+        "provider_evidence": {
+          "type": "object",
+          "description": "Redacted evidence from the provider response. MUST NOT contain credentials.",
+          "additionalProperties": true
+        },
+        "reconciliation_status": {
+          "type": ["string", "null"],
+          "description": "Present when state='outcome_unknown'. One of: 'pending', 'unreconciled', 'reconciled'."
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "succeeded"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "provider_execution_observed": {"const": true},
+              "finality": {"const": "final"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "failed"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "provider_execution_observed": {"const": true},
+              "finality": {"const": "final"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "refused"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "finality": {"const": "final"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "outcome_unknown"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "finality": {"const": "non_final"}
+            }
+          }
+        }
+      ]
+    },
+    "resource_owned_execution_result": {
+      "type": "object",
+      "required": [
+        "mode",
+        "state",
+        "finality",
+        "verified_by",
+        "executed_by",
+        "provider_execution_observed",
+        "resource_receipt_received",
+        "resource_receipt_verified",
+        "attempt_id",
+        "occurred_at"
+      ],
+      "properties": {
+        "mode": {"const": "resource_owned"},
+        "state": {"$ref": "#/$defs/resource_owned_execution_state"},
+        "finality": {"$ref": "#/$defs/finality_status"},
+        "verified_by": {
+          "type": "string",
+          "description": "Identifier of the component that verified the proof at the resource boundary. Example: 'resource-boundary-stripe', 'iam-control-plane-acme'."
+        },
+        "executed_by": {
+          "type": "string",
+          "description": "Identifier of the resource that executed the action. Example: 'stripe', 'acme-iam'."
+        },
+        "provider_execution_observed": {
+          "type": "boolean",
+          "description": "True if the resource reported an execution outcome (success or failure). False for 'submitted' and 'accepted' states - submission is not observation."
+        },
+        "resource_receipt_received": {
+          "type": "boolean",
+          "description": "True if the resource returned a receipt. False for 'submitted' and 'accepted'. 'succeeded' requires this to be true."
+        },
+        "resource_receipt_verified": {
+          "type": "boolean",
+          "description": "True if the resource receipt's signature was cryptographically verified against the resource's published signing key. False if no receipt was received or signature verification failed."
+        },
+        "attempt_id": {"type": "string"},
+        "occurred_at": {"$ref": "urn:actenon:protocol:_common:v1#/$defs/iso8601_timestamp"},
+        "resource_receipt": {
+          "type": ["object", "null"],
+          "description": "The resource's receipt payload, if received. MUST be cryptographically verified before being trusted.",
+          "additionalProperties": true
+        },
+        "submission_reference": {
+          "type": ["string", "null"],
+          "description": "Reference returned by the resource boundary on submission. Used to correlate later resource receipts."
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "submitted"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "provider_execution_observed": {"const": false},
+              "resource_receipt_received": {"const": false},
+              "finality": {"const": "non_final"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "accepted"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "provider_execution_observed": {"const": false},
+              "finality": {"const": "non_final"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "refused"}}, "required": ["state"]},
+          "then": {
+            "properties": {"finality": {"const": "final"}}
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "succeeded"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "provider_execution_observed": {"const": true},
+              "resource_receipt_received": {"const": true},
+              "resource_receipt_verified": {"const": true},
+              "finality": {"const": "final"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "failed"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "provider_execution_observed": {"const": true},
+              "finality": {"const": "final"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "outcome_unknown"}}, "required": ["state"]},
+          "then": {
+            "properties": {"finality": {"const": "non_final"}}
+          }
+        }
+      ]
+    }
+  }
+}

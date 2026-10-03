@@ -165,9 +165,12 @@ DETAILED_CODES: Final[frozenset[str]] = frozenset(
 # Map: alias (from existing actenon-kernel FailureCode enum) → canonical code.
 COMPATIBILITY_ALIASES: Final[dict[str, str]] = dict(_CATALOGUE["compatibility_aliases"])
 
-# Map: canonical internal_code → disclosed_code (public-safe umbrella).
-_INTERNAL_TO_DISCLOSED: Final[dict[str | None, str]] = {
-    code["internal_code"]: code["disclosed_code"] for code in _CATALOGUE["codes"]
+# Map: canonical code → disclosed_code (public-safe umbrella).
+# Keyed by ``code``, not ``internal_code``: the PROOF_INVALID umbrella has
+# internal_code null, so keying by internal_code dropped it and
+# refusal_to_disclosed_code("PROOF_INVALID") fell through to OUTCOME_UNKNOWN.
+_INTERNAL_TO_DISCLOSED: Final[dict[str, str]] = {
+    code["code"]: code["disclosed_code"] for code in _CATALOGUE["codes"]
 }
 
 # Map: canonical code → retryable boolean.
@@ -200,6 +203,19 @@ def resolve_alias(alias: str) -> str:
     )
 
 
+def _canonical_or_none(code: str) -> str | None:
+    """Resolve a canonical code or compatibility alias; None if unknown.
+
+    Legacy codes (DUPLICATE_REPLAY, REVOKED, EXPIRED, ACTION_HASH_MISMATCH,
+    ...) must be resolved BEFORE the disclosure / retryability lookups, or
+    they fall through to OUTCOME_UNKNOWN / retryable=True.
+    """
+    try:
+        return resolve_alias(code)
+    except KeyError:
+        return None
+
+
 def refusal_to_disclosed_code(internal_code: str | None, policy: DisclosurePolicy) -> str:
     """Map an internal refusal code to the disclosed code under the given policy.
 
@@ -214,32 +230,39 @@ def refusal_to_disclosed_code(internal_code: str | None, policy: DisclosurePolic
         # Caller used None to mean PROOF_MISSING (the only code with no
         # internal specialisation — it is its own disclosed_code).
         return RefusalCode.PROOF_MISSING.value
-    if internal_code not in _INTERNAL_TO_DISCLOSED:
+    canonical = _canonical_or_none(internal_code)
+    if canonical is None:
         # Unknown code — forward-compat escape hatch
         return RefusalCode.OUTCOME_UNKNOWN.value
-    return _INTERNAL_TO_DISCLOSED[internal_code]
+    return _INTERNAL_TO_DISCLOSED[canonical]
 
 
 def refusal_to_internal_code(internal_code: str | None, policy: DisclosurePolicy) -> str | None:
     """Return the internal_code to emit under the given policy.
 
     Under `public` policy, returns None (suppress detail).
-    Under `trusted` or `local_debug`, returns the internal_code.
+    Under `trusted` or `local_debug`, returns the internal_code, with a
+    compatibility alias resolved to its canonical code (the refusal
+    schema's internal_code enum contains canonical codes only). Unknown
+    codes are returned unchanged.
     """
     if policy == DisclosurePolicy.PUBLIC:
         return None
-    return internal_code
+    if internal_code is None:
+        return None
+    return _canonical_or_none(internal_code) or internal_code
 
 
 def refusal_to_retryable(internal_code: str | None) -> bool:
     """Return the retryable flag for the given internal code."""
     if internal_code is None:
         return _RETRYABLE[RefusalCode.PROOF_MISSING.value]
-    if internal_code not in _RETRYABLE:
+    canonical = _canonical_or_none(internal_code)
+    if canonical is None:
         # Unknown code — forward-compat: treat as retryable (safer default
         # for OUTCOME_UNKNOWN-like cases).
         return True
-    return _RETRYABLE[internal_code]
+    return _RETRYABLE[canonical]
 
 
 def is_disclosed_code_safe(code: str) -> bool:

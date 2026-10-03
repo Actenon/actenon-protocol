@@ -44,7 +44,26 @@ def _validate_depth(value: Any, *, max_depth: int, current_depth: int = 0) -> No
             _validate_depth(v, max_depth=max_depth, current_depth=current_depth + 1)
 
 
+def _utf8(value: str) -> bytes:
+    """Return the UTF-8 bytes of `value`, rejecting unpaired surrogates.
+
+    A lone surrogate (e.g. from ``json.loads('"\\ud800"')``) is not a Unicode
+    scalar value and has no UTF-8 encoding (profile §4.2). It is a
+    CanonicalisationError, never a silently substituted or escaped value.
+    """
+    try:
+        # str.encode, not value.encode: a str subclass must not be able to
+        # substitute different bytes (and so a different key order).
+        return str.encode(value, "utf-8")
+    except UnicodeEncodeError as e:
+        raise CanonicalisationError(
+            "strings must not contain unpaired UTF-16 surrogates "
+            f"(found U+{ord(value[e.start]):04X}); they cannot be encoded as UTF-8"
+        ) from None
+
+
 def _canonicalize_string(value: str) -> str:
+    _utf8(value)
     # ensure_ascii=False → non-ASCII chars are NOT \u-escaped (RFC 8785 §3.2.2)
     # separators=(",", ":") → no whitespace
     # allow_nan=False → reject NaN/Infinity
@@ -59,7 +78,10 @@ def _canonicalize_json(value: Any) -> str:
     if value is False:
         return "false"
     if isinstance(value, int) and not isinstance(value, bool):
-        return str(value)
+        # int.__repr__, not str(): subclasses (IntEnum on Python 3.10,
+        # HTTPStatus, or any class overriding __str__) must serialise as
+        # their integer value, never as "HTTPStatus.OK" or injected text.
+        return int.__repr__(value)
     if isinstance(value, float):
         raise CanonicalisationError(
             "floating-point values are not supported in ACTENON-JCS-STRICT-1; "
@@ -71,14 +93,13 @@ def _canonicalize_json(value: Any) -> str:
         return "[" + ",".join(_canonicalize_json(item) for item in value) + "]"
     if isinstance(value, dict):
         # Reject non-string keys (RFC 8785 requires string keys)
-        pieces = []
-        for key in sorted(
-            value.keys(), key=lambda k: k.encode("utf-8") if isinstance(k, str) else b""
-        ):
+        for key in value:
             if not isinstance(key, str):
                 raise CanonicalisationError(
                     f"canonical JSON object keys must be strings, got {type(key).__name__}"
                 )
+        pieces = []
+        for key in sorted(value.keys(), key=_utf8):
             pieces.append(_canonicalize_string(key) + ":" + _canonicalize_json(value[key]))
         return "{" + ",".join(pieces) + "}"
     raise CanonicalisationError(

@@ -116,4 +116,17 @@ __all__ = [
     "serialise_result",
 ]
 
-__version__ = PROTOCOL_VERSION
+
+def _package_version() -> str:
+    # The DISTRIBUTION version (what pip reports and what CHANGELOG, tags and
+    # PyPI carry). The wire-format version is PROTOCOL_VERSION; the two may
+    # legitimately differ (VERSIONING.md, "Protocol version vs package version").
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        return version("actenon-protocol")
+    except PackageNotFoundError:  # imported from a source tree without installing
+        return "0+unknown"
+
+
+__version__ = _package_version()

@@ -71,6 +71,12 @@ jobs:
           print(f'OK: README vector count ({claimed}) matches conformance/vectors/ ({actual})')
           EOF
 
+      - name: Verify conformance vectors match their hash lock
+        # "Hash-locked" means every vector's SHA-256 is pinned in
+        # conformance/vectors.sha256: a changed, deleted or unlisted vector
+        # fails here. Only new vectors may be added to the lock.
+        run: python scripts/check_vector_lock.py
+
       - name: Check generated Python badge
         run: python scripts/sync_badges.py --check
 
@@ -109,6 +115,11 @@ jobs:
 
       - name: Check README registry installs
         run: python scripts/check_readme_installs.py
+
+      - name: Check the packaged ecosystem.yaml matches the canonical root copy
+        # The renderer (and every sibling repo's gate) reads the copy shipped
+        # in the wheel; the README links the root file as the source of truth.
+        run: cmp ecosystem.yaml python/actenon_protocol/data/ecosystem.yaml
 
       - name: Check README ecosystem table in sync with ecosystem.yaml
         # On protocol's own CI we install from the local checkout so the

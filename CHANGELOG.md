@@ -12,6 +12,58 @@ git tags, and PyPI carry). The **wire protocol** version is declared separately 
 (`PROTOCOL_VERSION`) and only changes when wire semantics change. The two may
 legitimately diverge; see VERSIONING.md § "Protocol version vs package version".
 
+## [1.4.0]
+
+### Added
+
+* **`protocol/13-edge-binding.md` (normative).** A protected edge enforces
+  what it declares about itself, after the signature verifies:
+  * **E1** — the intent's capability is in the edge's `scope_capabilities`,
+    compared exactly. An empty declaration refuses. Code
+    `SCOPE_CAPABILITY_MISMATCH`.
+  * **E2** — every edge `parameter_constraints` member is in the signed
+    `scope.parameter_constraints` and canonically equal. Code
+    `PARAMETER_MISMATCH`.
+  * **E3** — the signed target satisfies at least one edge
+    `resource_selectors` entry. Code `TARGET_MISMATCH`.
+  * **E4** — `scope.single_use` is `true`. Code `SCOPE_MODE_INVALID`.
+  * **E5** — a revocable `extensions.authority` is checked against the
+    issuer's revocation source. The edge fails closed when the source is
+    unknown or unreachable. Code `AUTHORITY_REVOKED`.
+* `05-proof.md` points to it.
+
+### Security
+
+* Verifiers that accepted and then ignored these context fields executed
+  actions outside what the edge declared. For example, an edge declaring
+  `payments.read` executed a `payments.refund` proof (kernel differential
+  corpus `kernel_diff_v1`). From 1.4.0 such verifiers are non-conformant.
+  Executable vectors live in actenon-kernel
+  (`edge_binding_cases.json`, `edge_revocation_cases.json`), and the Go and
+  Rust SDKs vendor them.
+
+### Versioning
+
+* Package MINOR. The wire `PROTOCOL_VERSION` is unchanged at `1.1.0`: no
+  field, schema or canonicalisation changed (see the Versioning note in
+  13-edge-binding.md).
+* The "Actenon-compatible" pass mark is v1.4.0 in README.md, CONFORMANCE.md,
+  conformance/RUNNER_SPEC.md and conformance/generate_vectors.py
+  (`test_compatibility_mark_is_consistent_everywhere`).
+
+### Fixed
+
+* **The package ships every JSON Schema.** `execution_result.v1.json` (the
+  1.1.0 ExecutionResult union) and `boundary_manifest.v1.json` were never
+  copied into the package data. Published 1.1.0–1.3.0 could not validate
+  execution results, and the standalone conformance runner crashed outside a
+  checkout. A test now requires every `schemas/*.v1.json` to ship
+  byte-identical, and the runner falls back to the installed package's
+  schemas.
+* **`@actenon/protocol-types` 1.4.0 imports under plain Node.js.** Published
+  1.3.0 does not (reproduced). npm does not allow a version to be
+  republished, so the fix ships as 1.4.0, in step with the Python package.
+
 ## [1.3.0] — 2026-07-24
 
 ### Fixed

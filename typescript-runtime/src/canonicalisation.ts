@@ -42,14 +42,12 @@ function validateDepth(value: unknown, maxDepth: number, currentDepth: number = 
 // ─── Key sorting ───────────────────────────────────────────────────────
 /**
  * Compare two strings by their UTF-8 byte representation, ascending.
- * This matches RFC 8785 §3.2.3 and the Python reference's
+ * This matches the Python reference's
  * `sorted(keys, key=lambda k: k.encode("utf-8"))`.
  *
- * For BMP characters, UTF-8 byte order coincides with code point order.
- * For astral characters (code points > U+FFFF), UTF-8 byte order also
- * coincides with code point order. So this comparison is equivalent to
- * sorting by Unicode code point — but we do it via UTF-8 bytes to match
- * the spec exactly.
+ * UTF-8 byte order coincides with Unicode code point order. It does NOT
+ * match RFC 8785 §3.2.3, which sorts by UTF-16 code units: the two differ
+ * when U+E000..U+FFFF is compared with an astral character (profile §4.1).
  *
  * Note: JavaScript's default Array.prototype.sort() on strings sorts by
  * UTF-16 code unit, which diverges from code point order for astral
@@ -72,10 +70,58 @@ function utf8ByteCompare(a: string, b: string): number {
  * - Non-ASCII characters appear as literal UTF-8 bytes (no \u escaping)
  *
  * JSON.stringify produces exactly this output by default (it does not
- * \u-escape non-ASCII), so we delegate to it.
+ * \u-escape non-ASCII), so we delegate to it — after rejecting unpaired
+ * surrogates, which JSON.stringify would emit as "\udXXX" escapes.
  */
 function canonicalizeString(value: string): string {
+  assertWellFormed(value);
   return JSON.stringify(value);
+}
+
+/**
+ * Throw if `value` contains an unpaired UTF-16 surrogate. Such a string is
+ * not a sequence of Unicode scalar values and has no UTF-8 encoding
+ * (profile §4.2). JSON.stringify would escape it and TextEncoder would
+ * silently substitute U+FFFD, so neither may see it.
+ */
+function assertWellFormed(value: string): void {
+  for (let i = 0; i < value.length; i++) {
+    const c = value.charCodeAt(i);
+    if (c < 0xd800 || c > 0xdfff) continue;
+    const next = value.charCodeAt(i + 1);
+    if (c <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) {
+      i++;
+      continue;
+    }
+    throw new CanonicalisationError(
+      `strings must not contain unpaired UTF-16 surrogates (found U+${c.toString(16).toUpperCase()}); ` +
+      "they cannot be encoded as UTF-8"
+    );
+  }
+}
+
+// ─── Type checks ───────────────────────────────────────────────────────
+/**
+ * Only plain objects are JSON objects. Date, Map, Set, typed arrays, boxed
+ * primitives and class instances have no own enumerable data (or the wrong
+ * data) and used to canonicalise as "{}" or {"0":..}: two different Dates
+ * hashed identically. Reject them (profile §3.3, §6).
+ */
+function assertPlainObject(value: object): void {
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null || proto === Object.prototype) return;
+  // A plain object from another realm (vm context, iframe).
+  if (
+    Object.getPrototypeOf(proto) === null &&
+    Object.prototype.toString.call(value) === "[object Object]"
+  ) {
+    return;
+  }
+  const name =
+    (proto && typeof proto.constructor === "function" && proto.constructor.name) || "unknown";
+  throw new CanonicalisationError(
+    `unsupported value type for canonicalization: ${name} (not a plain JSON object)`
+  );
 }
 
 // ─── Core recursive canonicaliser ──────────────────────────────────────
@@ -86,26 +132,46 @@ function canonicalizeJsonImpl(value: unknown): string {
   if (value === false) return "false";
   if (typeof value === "bigint") return value.toString();
   if (typeof value === "number") {
-    if (Number.isInteger(value)) {
-      // JS Number is a 64-bit float; integers > 2^53-1 lose precision.
-      // Callers with large integers MUST pass them as BigInt.
-      return value.toString();
+    if (!Number.isInteger(value)) {
+      throw new CanonicalisationError(
+        "floating-point values are not supported in ACTENON-JCS-STRICT-1; " +
+        "use integer cents or string-encoded decimals instead"
+      );
     }
-    throw new CanonicalisationError(
-      "floating-point values are not supported in ACTENON-JCS-STRICT-1; " +
-      "use integer cents or string-encoded decimals instead"
-    );
+    // JS Number is a 64-bit float and represents integers exactly only up
+    // to 2^53 - 1. Beyond that toString() prints a rounded value
+    // (2**60 -> "1152921504606847000") or exponent form (1e21 -> "1e+21"),
+    // neither of which is the integer's canonical decimal. Callers with
+    // large integers MUST pass them as BigInt (parseStrict enforces the
+    // same bound on JSON text).
+    if (!Number.isSafeInteger(value)) {
+      throw new CanonicalisationError(
+        `integer ${value} is outside the safe integer range ±(2^53 − 1); pass it as a BigInt`
+      );
+    }
+    return value.toString();
   }
   if (typeof value === "string") return canonicalizeString(value);
   if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      if (!(i in value)) {
+        throw new CanonicalisationError(`sparse arrays are not supported (hole at index ${i})`);
+      }
+    }
     return "[" + value.map(canonicalizeJsonImpl).join(",") + "]";
   }
   if (typeof value === "object") {
+    assertPlainObject(value);
     const obj = value as Record<string, unknown>;
     // Reject non-string keys (RFC 8785 requires string keys).
     // In JS, object keys are always strings (or Symbols, which
     // Object.keys() excludes), so this check is belt-and-suspenders.
-    const keys = Object.keys(obj).sort(utf8ByteCompare);
+    const keys = Object.keys(obj);
+    // Validate before sorting: TextEncoder maps every lone surrogate to
+    // U+FFFD, so two distinct malformed keys would compare equal and the
+    // output would depend on insertion order.
+    keys.forEach(assertWellFormed);
+    keys.sort(utf8ByteCompare);
     const pieces = keys.map(
       (k) => `${canonicalizeString(k)}:${canonicalizeJsonImpl(obj[k])}`
     );
@@ -247,10 +313,8 @@ function scanStrict(text: string): void {
       let strContent = "";
       while (i < len) {
         if (text[i] === "\\") {
-          // Keep the escape sequence as-is for key comparison.
-          // JSON.parse will decode it later; we compare on the raw
-          // (escaped) form, which is consistent because duplicate
-          // keys in the same object would use the same escaping.
+          // Keep the escape sequence as-is here; the key is decoded
+          // below before the duplicate comparison.
           strContent += text[i] + text[i + 1];
           i += 2;
           continue;
@@ -272,14 +336,21 @@ function scanStrict(text: string): void {
         // This string is an object key. Check for duplicates at the
         // current object level.
         if (keyStack.length > 0) {
+          // Compare DECODED keys. JSON.parse decodes escapes before it
+          // applies last-wins, so "amount" and "amount" (or "/" and
+          // "\/") name the same member. Comparing the raw escaped text
+          // would let {"amount":1,"amount":1000} through as
+          // {"amount":1000}. A malformed key throws SyntaxError here,
+          // exactly as the JSON.parse call below would.
+          const key = JSON.parse(`"${strContent}"`) as string;
           const currentKeys = keyStack[keyStack.length - 1];
-          if (currentKeys.has(strContent)) {
+          if (currentKeys.has(key)) {
             throw new CanonicalisationError(
-              `duplicate key ${JSON.stringify(strContent)} in object — ` +
+              `duplicate key ${JSON.stringify(key)} in object — ` +
               `duplicate keys are prohibited by ACTENON-JCS-STRICT-1 §4.12`
             );
           }
-          currentKeys.add(strContent);
+          currentKeys.add(key);
         }
       }
       continue;

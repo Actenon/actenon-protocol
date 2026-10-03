@@ -15,6 +15,7 @@ Run with: `python -m pytest conformance/python/ -v`
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -206,6 +207,39 @@ class TestCanonicalisationInvalid:
         with pytest.raises(CanonicalisationError):
             canonicalize_json(Custom())
 
+    def test_int_subclasses_serialise_as_plain_integers(self):
+        """int subclasses must emit their integer value, never their __str__.
+
+        On Python 3.10, str(HTTPStatus.OK) is "HTTPStatus.OK", so the
+        canonical form was not even JSON and differed from 3.11+ ("200").
+        A subclass overriding __str__ could inject arbitrary members.
+        """
+        import enum
+        from http import HTTPStatus
+
+        class Code(enum.IntEnum):
+            REFUND = 7
+
+        class Sneaky(int):
+            def __str__(self):
+                return '1,"injected":true'
+
+            __repr__ = __str__
+
+        assert canonicalize_json({"status": HTTPStatus.OK}) == '{"status":200}'
+        assert canonicalize_json([Code.REFUND]) == "[7]"
+        assert canonicalize_json({"a": Sneaky(1)}) == '{"a":1}'
+
+    def test_str_subclass_cannot_change_key_order(self):
+        """Key order comes from the UTF-8 bytes of the string data itself."""
+
+        class Liar(str):
+            def encode(self, *args, **kwargs):
+                return b"\x00" + str.encode(self, *args, **kwargs)
+
+        assert canonicalize_json({"a": 1, Liar("b"): 2}) == canonicalize_json({"a": 1, "b": 2})
+        assert canonicalize_json({Liar("b"): 2, "a": 1}) == '{"a":1,"b":2}'
+
 
 class TestCanonicalisationUnicodeAndOrdering:
     """Specific Unicode and key-ordering guarantees."""
@@ -231,6 +265,48 @@ class TestCanonicalisationUnicodeAndOrdering:
     def test_empty_collections(self):
         assert canonicalize_json({}) == "{}"
         assert canonicalize_json([]) == "[]"
+
+    def test_key_order_utf8_not_utf16(self):
+        """U+E000..U+FFFF sort BEFORE astral keys (UTF-8 byte order).
+
+        This is where the profile deviates from RFC 8785, which sorts by
+        UTF-16 code units and would put the astral key first.
+        """
+        assert canonicalize_json({"\U0001f600": 2, "\ue000": 1}) == '{"\ue000":1,"\U0001f600":2}'
+        assert canonicalize_json({"\U00010000": 2, "\uffff": 1}) == '{"\uffff":1,"\U00010000":2}'
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "\ud800",
+            "\udc00",
+            "x\udbffy",
+            "\ude00\ud83d",  # reversed pair: two unpaired surrogates
+            {"k": "\udfff"},
+            {"\ud800": 1},
+            {chr(0xD800): 1, chr(0xD801): 2},
+            [["\ud800"]],
+        ],
+    )
+    def test_lone_surrogates_rejected(self, value):
+        """Unpaired surrogates are not Unicode scalar values and have no
+        UTF-8 encoding (§4.2): both entry points must raise
+        CanonicalisationError, not UnicodeEncodeError, and must never
+        return a string that cannot be encoded.
+        """
+        with pytest.raises(CanonicalisationError):
+            canonicalize_json(value)
+        with pytest.raises(CanonicalisationError):
+            canonicalize_bytes(value)
+
+    def test_lone_surrogates_from_json_escapes_rejected(self):
+        """json.loads decodes "\\ud800" to a lone surrogate; it must not canonicalise."""
+        with pytest.raises(CanonicalisationError):
+            canonicalize_bytes(json.loads('{"s":"\\ud800"}'))
+
+    def test_surrogate_pair_accepted(self):
+        """A properly paired escape decodes to one astral scalar value."""
+        assert canonicalize_bytes(json.loads('"\\ud83d\\ude00"')) == '"\U0001f600"'.encode()
 
 
 # ---------- 2. Schema validation ----------
@@ -465,6 +541,56 @@ class TestRefusalCatalogue:
             f"enum-only: {enum_codes - catalogue_codes}"
         )
 
+    @pytest.mark.parametrize("policy", list(DisclosurePolicy))
+    def test_disclosed_code_matches_catalogue_for_every_code(self, policy):
+        """refusal_to_disclosed_code(code) is the catalogue's disclosed_code.
+
+        Includes the PROOF_INVALID umbrella, whose internal_code is null in
+        the catalogue: it used to fall through to OUTCOME_UNKNOWN, telling a
+        public caller "execution may have happened" for an invalid proof.
+        """
+        from actenon_protocol.refusal_codes import all_codes
+
+        for entry in all_codes():
+            assert refusal_to_disclosed_code(entry["code"], policy) == entry["disclosed_code"], (
+                entry["code"]
+            )
+            assert refusal_to_retryable(entry["code"]) is entry["retryable"], entry["code"]
+
+    @pytest.mark.parametrize(
+        "kernel_code,canonical",
+        [
+            # Emitted by actenon-kernel but absent from the catalogue, so they
+            # disclosed as OUTCOME_UNKNOWN / retryable (E2E finding F12).
+            ("SCHEMA_INVALID", "MALFORMED_REQUEST"),  # actenon/core/errors.py
+            ("ESCROW_REFERENCE_MISSING", "MALFORMED_REQUEST"),  # protected_executor.py
+            ("EXECUTION_FAILED", "OUTCOME_UNKNOWN"),  # executor raised; effect unknown
+            ("POLICY_REFUSED", "POLICY_REFUSAL"),  # protected_executor.py default
+        ],
+    )
+    def test_emitted_kernel_codes_are_catalogued(self, kernel_code, canonical):
+        assert resolve_alias(kernel_code) == canonical
+
+    @pytest.mark.parametrize("alias", sorted(__import__("actenon_protocol").COMPATIBILITY_ALIASES))
+    def test_compatibility_aliases_disclose_like_their_canonical_code(self, alias):
+        """Legacy kernel/permit codes must resolve BEFORE disclosure mapping.
+
+        They used to miss the map and come out as OUTCOME_UNKNOWN with
+        retryable=True: DUPLICATE_REPLAY, REVOKED and EXPIRED were told to
+        retry although REPLAY_DETECTED / AUTHORITY_REVOKED / PROOF_EXPIRED
+        are final. The trusted internal_code must be the canonical code,
+        because the refusal schema's internal_code enum has no aliases.
+        """
+        from actenon_protocol.refusal_codes import all_codes
+
+        canonical = resolve_alias(alias)
+        entry = next(e for e in all_codes() if e["code"] == canonical)
+        for policy in DisclosurePolicy:
+            assert refusal_to_disclosed_code(alias, policy) == entry["disclosed_code"]
+        assert refusal_to_retryable(alias) is entry["retryable"]
+        assert refusal_to_internal_code(alias, DisclosurePolicy.PUBLIC) is None
+        assert refusal_to_internal_code(alias, DisclosurePolicy.TRUSTED) == canonical
+
     def test_public_safe_codes_subset_of_detailed_or_umbrella(self):
         # PUBLIC_SAFE_CODES includes umbrella codes (like PROOF_INVALID) that
         # have internal_code=null in the catalogue. DETAILED_CODES only
@@ -676,22 +802,101 @@ class TestExecutionModes:
                             f"vector {vector_name!r} in {cat}/{sub} missing execution_mode"
                         )
 
-    def test_mode_distinction_vectors(self):
-        """The execution-mode vectors prove that mode mismatch produces AUDIENCE_MISMATCH."""
-        for vector_name, vector in _load_vectors("execution-mode"):
-            proof_mode = vector["proof"]["execution_mode"]
-            verifier_mode = vector["verifier_mode"]
-            expected = vector["expected_outcome"]
-            if proof_mode == verifier_mode:
-                assert expected == "accepted", (
-                    f"vector {vector_name!r}: same mode should be accepted"
+    def test_execution_mode_vectors_are_all_exercised(self):
+        """All 10 execution-mode vectors exist and are run below.
+
+        The previous test globbed ``execution-mode/*.json`` while the vectors
+        live in ``execution-mode/valid/``, so it iterated zero times and
+        passed vacuously (it also expected keys no vector has).
+        """
+        vectors = _load_vectors("execution-mode", "valid")
+        assert len(vectors) == 10
+        assert not _load_vectors("execution-mode", "invalid")
+
+    @pytest.mark.parametrize(
+        "vector_name,vector",
+        _load_vectors("execution-mode", "valid"),
+        ids=[v[0] for v in _load_vectors("execution-mode", "valid")],
+    )
+    def test_execution_mode_vector(self, vector_name: str, vector: dict):
+        """Check each execution-mode vector against the reference implementation.
+
+        The vectors carry exactly one expectation:
+
+        * ``expected_mode`` — ``input.execution_mode`` parses to that mode.
+        * ``expected_validation`` on an ``{"execution_mode": ...}`` input —
+          the value must be present and satisfy the schema's execution_mode
+          definition (explicit, never inferred; a string enum).
+        * ``expected_validation`` / ``expected_finality`` on a
+          ``{"mode", "result"}`` input — the result is built with the
+          reference ``ExecutionResult`` models. These vectors use receipt
+          vocabulary: brokered success (``outcome: EXECUTED`` or a succeeded
+          ``provider_response_summary``) is observed only when a
+          ``provider_response_summary`` is present; resource-owned
+          ``outcome`` names the state (default ``SUCCEEDED``), and a
+          ``resource_signature`` is the verified resource receipt.
+        """
+        from actenon_protocol import (
+            BrokeredExecutionResult,
+            BrokeredExecutionState,
+            ExecutionResultValidationError,
+            ResourceOwnedExecutionResult,
+            ResourceOwnedExecutionState,
+        )
+        from jsonschema import Draft202012Validator
+
+        expectations = {"expected_mode", "expected_validation", "expected_finality"} & set(vector)
+        assert len(expectations) == 1, f"{vector_name}: expected exactly one expectation key"
+        assert vector["name"] + ".v1.json" == vector_name
+        inp = vector["input"]
+
+        if "expected_mode" in vector:
+            assert ExecutionMode(inp["execution_mode"]) == vector["expected_mode"]
+            return
+
+        if "result" not in inp:
+            common = json.loads((SCHEMAS_DIR / "_common.v1.json").read_text())
+            mode_schema = common["$defs"]["execution_mode"]
+            valid = "execution_mode" in inp and Draft202012Validator(mode_schema).is_valid(
+                inp["execution_mode"]
+            )
+            assert valid == (vector["expected_validation"] == "valid"), vector_name
+            return
+
+        result = inp["result"]
+        common_fields = {
+            "verified_by": "verifier",
+            "executed_by": "executor",
+            "attempt_id": "exec_abcdef0123456789",
+            "occurred_at": "2026-07-21T12:00:00Z",
+        }
+        try:
+            if inp["mode"] == "brokered":
+                summary = result.get("provider_response_summary", {})
+                assert result.get("outcome") == "EXECUTED" or summary.get("status") == "succeeded"
+                built = BrokeredExecutionResult(
+                    state=BrokeredExecutionState.SUCCEEDED,
+                    provider_execution_observed="provider_response_summary" in result,
+                    **common_fields,
                 )
             else:
-                assert expected == "refused", (
-                    f"vector {vector_name!r}: mode mismatch should be refused"
+                assert inp["mode"] == "resource_owned"
+                signed = "resource_signature" in result
+                built = ResourceOwnedExecutionResult(
+                    state=ResourceOwnedExecutionState(result.get("outcome", "SUCCEEDED").lower()),
+                    provider_execution_observed=signed,
+                    resource_receipt_received=signed,
+                    resource_receipt_verified=signed,
+                    **common_fields,
                 )
-                assert vector["expected_disclosed_code"] == "PROOF_INVALID"
-                assert vector["expected_internal_code"] == "AUDIENCE_MISMATCH"
+        except ExecutionResultValidationError:
+            built = None
+
+        if "expected_finality" in vector:
+            assert built is not None, vector_name
+            assert built.finality == vector["expected_finality"], vector_name
+        else:
+            assert (built is not None) == (vector["expected_validation"] == "valid"), vector_name
 
 
 # ---------- 5b. Execution results (Prompt 9) ----------
@@ -995,6 +1200,36 @@ class TestVersionConstants:
     def test_protocol_version(self):
         assert PROTOCOL_VERSION == "1.1.0"
 
+    def test_dunder_version_is_the_package_version(self):
+        """__version__ is the distribution version (what pip reports); the wire
+        version is PROTOCOL_VERSION. It used to be PROTOCOL_VERSION ("1.1.0")
+        while the installed package was 1.3.0."""
+        import importlib.metadata
+        import re
+
+        import actenon_protocol
+
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        declared = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
+        assert actenon_protocol.__version__ == importlib.metadata.version("actenon-protocol")
+        assert actenon_protocol.__version__ == declared
+
+    def test_protocol_version_single_sourced(self):
+        """VERSIONING.md and both TypeScript packages state the same wire
+        version as version.py (TS said 1.0.0, so TS and Python producers
+        stamped different protocol_version values)."""
+        import re
+
+        versioning = (REPO_ROOT / "VERSIONING.md").read_text(encoding="utf-8")
+        assert (
+            re.search(r"\*\*Protocol version:\*\* `([^`]+)`", versioning).group(1)
+            == PROTOCOL_VERSION
+        )
+        for ts in ("typescript/src/version.ts", "typescript-runtime/src/version.ts"):
+            text = (REPO_ROOT / ts).read_text(encoding="utf-8")
+            m = re.search(r'PROTOCOL_VERSION = "([^"]+)"', text)
+            assert m and m.group(1) == PROTOCOL_VERSION, ts
+
     def test_canonicalisation_profile(self):
         assert CANONICALISATION_PROFILE == "ACTENON-JCS-STRICT-1"
 
@@ -1053,3 +1288,321 @@ class TestExecutionOutcome:
         assert ExecutionOutcome.REFUSED == "REFUSED"
         assert ExecutionOutcome.PARTIAL == "PARTIAL"
         assert ExecutionOutcome.UNKNOWN == "UNKNOWN"
+
+
+# ---------- 9. Vector hash lock ----------
+
+
+def _vector_lock_module():
+    """Import scripts/check_vector_lock.py (scripts/ is not a package)."""
+    import importlib.util
+
+    path = REPO_ROOT / "scripts" / "check_vector_lock.py"
+    spec = importlib.util.spec_from_file_location("check_vector_lock", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestVectorHashLock:
+    """The README calls the vectors "hash-locked": prove the lock bites."""
+
+    LOCK = REPO_ROOT / "conformance" / "vectors.sha256"
+
+    def _copy(self, tmp_path):
+        import shutil
+
+        vectors = tmp_path / "vectors"
+        shutil.copytree(VECTORS_DIR, vectors)
+        lock = tmp_path / "vectors.sha256"
+        shutil.copy(self.LOCK, lock)
+        return vectors, lock
+
+    def test_committed_vectors_match_lock(self):
+        problems = _vector_lock_module().check_lock(VECTORS_DIR, self.LOCK)
+        assert problems == []
+
+    def test_lock_covers_every_vector(self):
+        entries = _vector_lock_module().read_lock(self.LOCK)
+        on_disk = {p.relative_to(VECTORS_DIR).as_posix() for p in VECTORS_DIR.rglob("*.json")}
+        assert set(entries) == on_disk
+        assert len(entries) == 129
+
+    def test_tampered_vector_detected(self, tmp_path):
+        vectors, lock = self._copy(tmp_path)
+        target = vectors / "canonicalisation" / "valid" / "simple_object.json"
+        target.write_bytes(target.read_bytes().replace(b'"z": 1', b'"z": 2'))
+        problems = _vector_lock_module().check_lock(vectors, lock)
+        assert any("canonicalisation/valid/simple_object.json" in p for p in problems), problems
+
+    def test_whitespace_only_change_detected(self, tmp_path):
+        vectors, lock = self._copy(tmp_path)
+        target = vectors / "refusal" / "valid" / "replay_detected.v1.json"
+        target.write_bytes(target.read_bytes() + b" ")
+        assert _vector_lock_module().check_lock(vectors, lock)
+
+    def test_added_and_removed_vectors_detected(self, tmp_path):
+        vectors, lock = self._copy(tmp_path)
+        (vectors / "proof" / "valid" / "extra.v1.json").write_text("{}\n")
+        (vectors / "receipt" / "invalid" / "missing_target.v1.json").unlink()
+        problems = "\n".join(_vector_lock_module().check_lock(vectors, lock))
+        assert "proof/valid/extra.v1.json" in problems
+        assert "receipt/invalid/missing_target.v1.json" in problems
+
+
+# ---------- 10. Standalone runner (conformance/runner.py) ----------
+
+
+def _runner_module():
+    import importlib.util
+
+    path = REPO_ROOT / "conformance" / "runner.py"
+    spec = importlib.util.spec_from_file_location("actenon_conformance_runner", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses resolve their module by name
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestStandaloneRunner:
+    """The runner external implementers use to claim compatibility must not
+    certify a non-conformant implementation."""
+
+    def test_reference_passes_every_vector_exactly_once(self):
+        runner = _runner_module()
+        results = runner.ConformanceRunner(runner.ReferenceValidator()).run_all()
+        assert results.failures == []
+        assert results.total == 129  # was double-counted as 258
+        assert results.passed == 129
+        assert results.skipped == 0
+
+    def test_float_accepting_canonicaliser_is_not_compatible(self):
+        runner = _runner_module()
+
+        class AcceptsEverything(runner.ReferenceValidator):
+            def canonicalize(self, input_value):
+                try:
+                    return super().canonicalize(input_value)
+                except Exception:
+                    return json.dumps(input_value)
+
+            def parse_json(self, text):
+                return json.loads(text)
+
+        results = runner.ConformanceRunner(AcceptsEverything()).run_all("canonicalisation")
+        failed = {vr.vector.name for vr in results.failures}
+        assert {
+            "float_top_level",
+            "float_in_object",
+            "float_nan",
+            "deeply_nested_exceeds_limit",
+            "oversized_structure",
+            "duplicate_keys",
+        } <= failed
+
+    def test_execution_result_vectors_are_executed(self):
+        runner = _runner_module()
+
+        class AcceptsAnyResult(runner.ReferenceValidator):
+            def validate_execution_result(self, artefact):
+                return True, None
+
+        results = runner.ConformanceRunner(AcceptsAnyResult()).run_all("execution-result")
+        assert len(results.failures) == 4
+        assert all(vr.vector.sub == "invalid" for vr in results.failures)
+
+    def test_language_specific_vectors_are_skipped_not_passed(self):
+        runner = _runner_module()
+
+        class NoNativeInputs(runner.ReferenceValidator):
+            def language_specific_input(self, vector_name):
+                return runner.NOT_APPLICABLE
+
+        results = runner.ConformanceRunner(NoNativeInputs()).run_all("canonicalisation")
+        assert results.failed == 0
+        assert results.skipped == 3
+        assert results.passed == 34
+
+
+# ---------- 11. README claims about the Python package ----------
+
+
+class TestReadmeClaims:
+    """Executable checks for README statements CI did not previously verify."""
+
+    README = REPO_ROOT / "README.md"
+
+    def _section(self, heading: str) -> str:
+        text = self.README.read_text(encoding="utf-8")
+        start = text.index(heading)
+        end = text.find("\n## ", start + len(heading))
+        return text[start : end if end != -1 else None]
+
+    def test_refusal_codes_named_in_readme_exist(self):
+        """Every code the README's refusal section names is a catalogue code
+        or a registered compatibility alias; disclosed-code examples are
+        public-safe codes."""
+        import re
+
+        from actenon_protocol import COMPATIBILITY_ALIASES
+
+        section = self._section("## Refusal taxonomy")
+        named = set(re.findall(r"`([A-Z][A-Z0-9_]{3,})`", section))
+        assert named, "no codes found in the refusal section"
+        known = {c.value for c in RefusalCode} | set(COMPATIBILITY_ALIASES)
+        assert named <= known, f"README names unknown refusal codes: {sorted(named - known)}"
+        disclosed_line = next(
+            line for line in section.splitlines() if line.startswith("- **`disclosed_code`**")
+        )
+        disclosed = set(re.findall(r"`([A-Z][A-Z0-9_]{3,})`", disclosed_line))
+        assert disclosed <= PUBLIC_SAFE_CODES, sorted(disclosed - PUBLIC_SAFE_CODES)
+
+    def test_python_usage_snippet_runs(self):
+        """The ```python block under "## Use" executes as written."""
+        section = self._section("## Use")
+        code = section.split("```python\n", 1)[1].split("```", 1)[0]
+        exec(compile(code, "README.md#use", "exec"), {})
+
+    def test_repo_layout_paths_exist(self):
+        """Every file or directory listed under "What's in this repo" exists."""
+        import re
+
+        block = self._section("## What's in this repo").split("```", 2)[1]
+        parent = None
+        for line in block.splitlines():
+            m = re.match(r"^(\s*)([\w.-]+/?)(\s|$)", line)
+            if not m or set(m.group(2)) == {"."}:  # skip "..." elisions
+                continue
+            indent, name = m.group(1), m.group(2)
+            if not indent:
+                parent = name if name.endswith("/") else None
+                path = REPO_ROOT / name
+            else:
+                assert parent, line
+                path = REPO_ROOT / parent / name
+            assert path.exists(), (
+                f"README lists {path.relative_to(REPO_ROOT)}, which does not exist"
+            )
+
+
+# ---------- 12. Packaged data copies ----------
+
+
+@pytest.mark.parametrize(
+    "source,packaged",
+    [
+        ("ecosystem.yaml", "ecosystem.yaml"),
+        ("refusals/catalogue.v1.yaml", "catalogue.v1.yaml"),
+        ("identifiers/prefixes.v1.yaml", "prefixes.v1.yaml"),
+    ]
+    + [
+        (f"schemas/{p.name}", p.name)
+        for p in sorted((REPO_ROOT / "python" / "actenon_protocol" / "data").glob("*.v1.json"))
+        if p.name != "catalogue.v1.json"  # compiled from YAML; checked by compile_yaml_to_json.py
+    ],
+)
+def test_packaged_data_matches_source(source: str, packaged: str):
+    """The wheel ships copies of the repo's source-of-truth files. A stale
+    copy means the installed package (and the ecosystem-table gate sibling
+    repos run from PyPI) disagrees with this repository."""
+    src = (REPO_ROOT / source).read_bytes()
+    dst = (REPO_ROOT / "python" / "actenon_protocol" / "data" / packaged).read_bytes()
+    assert src == dst, f"python/actenon_protocol/data/{packaged} is out of sync with {source}"
+
+
+# ---------- 13. python -m actenon_protocol.conformance_canonicalisation ----------
+
+
+class TestCanonicalisationConformanceCommand:
+    def _run(self, *args, cwd):
+        import subprocess
+
+        return subprocess.run(
+            [sys.executable, "-m", "actenon_protocol.conformance_canonicalisation", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+        )
+
+    def test_runs_against_explicit_vectors_dir_from_anywhere(self, tmp_path):
+        vectors = VECTORS_DIR / "canonicalisation"
+        proc = self._run("--vectors", str(vectors), cwd=tmp_path)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "0 failed" in proc.stdout
+
+    def test_missing_vectors_is_a_clear_error_not_a_traceback(self, tmp_path, monkeypatch):
+        import actenon_protocol.conformance_canonicalisation as cli
+
+        monkeypatch.setattr(cli, "_default_candidates", lambda: [tmp_path / "nope"])
+        monkeypatch.chdir(tmp_path)
+        assert cli.main([]) == 2
+
+
+def test_compatibility_mark_is_consistent_everywhere(monkeypatch):
+    """README (enforced by verify-claims), CONFORMANCE.md, RUNNER_SPEC.md,
+    the generator and the runner's own verdict name the same mark. The
+    runner printed "Actenon-compatible v1.1.0" while the docs promise v1.3.0."""
+    import contextlib
+    import io
+    import re
+
+    import actenon_protocol
+
+    mark = f"Actenon-compatible v{actenon_protocol.__version__}"
+    for rel in (
+        "README.md",
+        "CONFORMANCE.md",
+        "conformance/RUNNER_SPEC.md",
+        "conformance/generate_vectors.py",
+        "conformance/runner.py",
+    ):
+        text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        for found in re.findall(r"Actenon-compatible v\d+\.\d+\.\d+", text):
+            assert found == mark, f"{rel}: {found!r} != {mark!r}"
+    runner = _runner_module()
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        monkeypatch.setattr(sys, "argv", ["runner.py"])
+        runner.main()
+    assert f"✅ {mark}" in out.getvalue()
+
+
+# ---------- 14. Ecosystem table: never link a repository the public cannot open ----------
+
+
+class TestEcosystemOptionalLine:
+    """The Optional line is rendered into every sibling repo's README.
+
+    actenon-cloud is a private repository: linking it put a 404 into the
+    README of every public repo and turned their link checks red (or made
+    them add exclusions). An optional component without a public URL is
+    rendered as a plain name.
+    """
+
+    def test_optional_entry_without_url_renders_as_plain_name(self):
+        from actenon_protocol.ecosystem import _optional_line
+
+        line = _optional_line(
+            {"name": "x-private", "summary": "a thing", "licence": "private", "note": "Optional."}
+        )
+        assert line == "**Optional:** `x-private` — a thing (private). Optional."
+
+    def test_optional_entry_with_url_still_links(self):
+        from actenon_protocol.ecosystem import _optional_line
+
+        line = _optional_line(
+            {
+                "name": "x",
+                "url": "https://example.org/x",
+                "summary": "s",
+                "licence": "l",
+                "note": "n",
+            }
+        )
+        assert line == "**Optional:** [`x`](https://example.org/x) — s (l). n"
+
+    def test_rendered_table_does_not_link_the_private_cloud_repo(self):
+        pytest.importorskip("yaml")
+        from actenon_protocol.ecosystem import render_table
+
+        assert "github.com/Actenon/actenon-cloud" not in render_table("actenon-protocol")

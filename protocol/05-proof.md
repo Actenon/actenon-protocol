@@ -58,6 +58,9 @@ A verifier receiving an `ExecutionProof` MUST perform the following steps in ord
 14. **Check the replay store.** If the `proof_id` has already been used with a different `execution_attempt_id` → `REPLAY_DETECTED`.
 15. **All checks pass.** The proof is valid. The verifier MAY proceed to execute the action.
 
+A protected edge additionally enforces its own declarations (capabilities, parameter constraints, resource selectors,
+single use) and the revocation status of a revocable authority: see [13-edge-binding.md](13-edge-binding.md).
+
 Steps 1–14 MUST be performed in order. A failure at any step produces the corresponding refusal and skips the remaining steps.
 
 ## Issuance algorithm

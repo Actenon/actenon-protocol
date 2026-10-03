@@ -25,6 +25,8 @@ If the markdown and the machine-readable sources disagree, the machine-readable 
 | 09 | [09-issuer-metadata.md](09-issuer-metadata.md) | Trusted issuer metadata and discovery |
 | 10 | [10-evidence-linkage.md](10-evidence-linkage.md) | Evidence-linkage fields |
 | 11 | [11-disclosure-policy.md](11-disclosure-policy.md) | Secure disclosure policy |
+| 12 | [12-execution-results.md](12-execution-results.md) | Execution results and per-mode state machines |
+| 13 | [13-edge-binding.md](13-edge-binding.md) | Edge binding: what the protected edge declares (E1–E5) |
 
 ## Normative references
 

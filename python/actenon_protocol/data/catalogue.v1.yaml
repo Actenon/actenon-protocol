@@ -315,6 +315,13 @@ compatibility_aliases:
   "RATE_LIMITED": "POLICY_REFUSAL"
   "ENGINE_ERROR": "OUTCOME_UNKNOWN"
 
+  # Emitted by actenon-kernel (protected executor / schema validation) but
+  # previously uncatalogued, so they fell through to OUTCOME_UNKNOWN.
+  "SCHEMA_INVALID": "MALFORMED_REQUEST"  # request failed schema validation
+  "ESCROW_REFERENCE_MISSING": "MALFORMED_REQUEST"  # required escrow_id absent; not retryable (proof already claimed)
+  "EXECUTION_FAILED": "OUTCOME_UNKNOWN"  # executor raised after the replay claim; side effect may have happened
+  "POLICY_REFUSED": "POLICY_REFUSAL"  # executor default when a policy decision carries no reason code
+
 # Disclosure policies
 # -------------------
 # A disclosure policy determines which code appears in the `disclosed_code`

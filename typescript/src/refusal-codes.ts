@@ -111,6 +111,11 @@ export const COMPATIBILITY_ALIASES: Readonly<Record<string, string>> = {
   BUDGET_EXCEEDED: "POLICY_REFUSAL",
   RATE_LIMITED: "POLICY_REFUSAL",
   ENGINE_ERROR: "OUTCOME_UNKNOWN",
+  // Kernel executor / schema-validation codes
+  SCHEMA_INVALID: "MALFORMED_REQUEST",
+  ESCROW_REFERENCE_MISSING: "MALFORMED_REQUEST",
+  EXECUTION_FAILED: "OUTCOME_UNKNOWN",
+  POLICY_REFUSED: "POLICY_REFUSAL",
 };
 
 const INTERNAL_TO_DISCLOSED: Record<string, string> = {
@@ -162,25 +167,43 @@ const RETRYABLE: Record<string, boolean> = {
 export function resolveAlias(alias: string): string {
   // Try canonical first
   if (Object.values(RefusalCode).includes(alias as RefusalCode)) return alias;
-  if (alias in COMPATIBILITY_ALIASES) return COMPATIBILITY_ALIASES[alias];
+  // Object.hasOwn, not `in`: "toString", "constructor", "__proto__" are
+  // inherited, not catalogue entries.
+  if (Object.hasOwn(COMPATIBILITY_ALIASES, alias)) return COMPATIBILITY_ALIASES[alias];
   throw new Error(`refusal code ${JSON.stringify(alias)} is neither canonical nor a registered alias`);
+}
+
+// Resolve a canonical code or compatibility alias; null if unknown. Legacy
+// codes (DUPLICATE_REPLAY, REVOKED, EXPIRED, ACTION_HASH_MISMATCH, ...) must
+// be resolved BEFORE the disclosure / retryability lookups, or they fall
+// through to OUTCOME_UNKNOWN / retryable=true.
+function canonicalOrNull(code: string): string | null {
+  if (Object.values(RefusalCode).includes(code as RefusalCode)) return code;
+  if (Object.hasOwn(COMPATIBILITY_ALIASES, code)) return COMPATIBILITY_ALIASES[code];
+  return null;
 }
 
 export function refusalToDisclosedCode(internalCode: string | null, _policy: DisclosurePolicy): string {
   if (internalCode === null) return RefusalCode.PROOF_MISSING;
-  if (!(internalCode in INTERNAL_TO_DISCLOSED)) return RefusalCode.OUTCOME_UNKNOWN;
-  return INTERNAL_TO_DISCLOSED[internalCode];
+  const canonical = canonicalOrNull(internalCode);
+  if (canonical === null) return RefusalCode.OUTCOME_UNKNOWN;
+  return INTERNAL_TO_DISCLOSED[canonical];
 }
 
+// Under PUBLIC returns null. Otherwise returns the canonical code for a
+// compatibility alias (the refusal schema's internal_code enum has no
+// aliases); unknown codes are returned unchanged.
 export function refusalToInternalCode(internalCode: string | null, policy: DisclosurePolicy): string | null {
   if (policy === DisclosurePolicy.PUBLIC) return null;
-  return internalCode;
+  if (internalCode === null) return null;
+  return canonicalOrNull(internalCode) ?? internalCode;
 }
 
 export function refusalToRetryable(internalCode: string | null): boolean {
   if (internalCode === null) return RETRYABLE[RefusalCode.PROOF_MISSING];
-  if (!(internalCode in RETRYABLE)) return true;
-  return RETRYABLE[internalCode];
+  const canonical = canonicalOrNull(internalCode);
+  if (canonical === null) return true;
+  return RETRYABLE[canonical];
 }
 
 export function isDisclosedCodeSafe(code: string): boolean {

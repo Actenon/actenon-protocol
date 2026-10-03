@@ -1,0 +1,26 @@
+{
+  "comment": "Single source of truth for branch protection (pull_request) and the publish workflows' release gate (release). Validated against .github/workflows by scripts/release_gate.py validate (CI job 'Required-check names exist'). Not required: lychee (external links), actenon-scan app check.",
+  "branch": "main",
+  "pull_request": [
+    "Conformance suite (Python 3.10)",
+    "Conformance suite (Python 3.11)",
+    "Conformance suite (Python 3.12)",
+    "Lint + format check",
+    "TypeScript types check",
+    "TypeScript runtime (@actenon/protocol)",
+    "Verify README claims (machine-enforced)",
+    "pyproject / tag / PyPI agree",
+    "scan",
+    "Required-check names exist"
+  ],
+  "release": [
+    "Conformance suite (Python 3.10)",
+    "Conformance suite (Python 3.11)",
+    "Conformance suite (Python 3.12)",
+    "Lint + format check",
+    "TypeScript types check",
+    "TypeScript runtime (@actenon/protocol)",
+    "Verify README claims (machine-enforced)",
+    "Required-check names exist"
+  ]
+}

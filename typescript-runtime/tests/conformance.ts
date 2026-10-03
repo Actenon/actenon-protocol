@@ -22,6 +22,9 @@
  */
 
 import { canonicalizeJson, canonicalize, parseStrict, CanonicalisationError } from "../src/canonicalisation.js";
+import * as runtimeVersion from "../src/version.js";
+// The types package (source of truth for these constants) in this repo.
+import * as typesVersion from "../../typescript/src/version.js";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
@@ -112,7 +115,11 @@ function run(): number {
         failed++;
       }
     }
-  } catch {}
+  } catch (e) {
+    // Never swallow: a vector that cannot be read or parsed is a failure.
+    console.log(`  FAIL  valid vectors: ${e instanceof Error ? e.message : String(e)}`);
+    failed++;
+  }
 
   // ── Invalid vectors ────────────────────────────────────────────
   try {
@@ -217,7 +224,11 @@ function run(): number {
         }
       }
     }
-  } catch {}
+  } catch (e) {
+    // Never swallow: a vector that cannot be read or parsed is a failure.
+    console.log(`  FAIL  invalid vectors: ${e instanceof Error ? e.message : String(e)}`);
+    failed++;
+  }
 
   // ── TypeScript-specific adversarial tests ─────────────────────
   const tsOnlyTests: Array<[string, () => void]> = [
@@ -305,6 +316,35 @@ function run(): number {
     }
   }
 
+  // ── Duplicate keys spelled with different escapes (security) ──
+  // JSON.parse decodes escapes before applying last-wins, so a key that
+  // is only textually different ("amount" vs "amount") is still a
+  // duplicate. The scanner must compare DECODED keys.
+  const escapedDuplicates: Array<[string, string]> = [
+    ["dup_key_unicode_escape", '{"amount":1,"\\u0061mount":1000}'],
+    ["dup_key_unicode_escape_first", '{"\\u0061mount":1,"amount":1000}'],
+    ["dup_key_solidus_escape", '{"/":1,"\\/":2}'],
+    ["dup_key_hex_case", '{"\\u00E9":1,"\\u00e9":2}'],
+    ["dup_key_non_ascii_escape", '{"\\u00e9":1,"é":2}'],
+    ["dup_key_surrogate_pair_escape", '{"\\uD83D\\uDE00":1,"😀":2}'],
+    ["dup_key_nested_escape", '{"a":{"b":1,"\\u0062":2}}'],
+    ["dup_key_in_array_escape", '[{"x":1},{"x":2,"\\u0078":3}]'],
+  ];
+  for (const [name, text] of escapedDuplicates) {
+    try {
+      const parsed = parseStrict(text);
+      console.log(`  FAIL  ${name}: expected duplicate-key error but parseStrict returned ${JSON.stringify(parsed)}`);
+      failed++;
+    } catch (e) {
+      if (e instanceof CanonicalisationError) {
+        passed++;
+      } else {
+        console.log(`  FAIL  ${name}: wrong error type: ${e instanceof Error ? e.constructor.name : typeof e}`);
+        failed++;
+      }
+    }
+  }
+
   // ── Duplicate values accepted (no false positive) ─────────────
   try {
     parseStrict('{"a":1,"b":1}');
@@ -334,6 +374,78 @@ function run(): number {
       passed++;
     } else {
       console.log(`  FAIL  oversized_rejected: wrong error type: ${e instanceof Error ? e.constructor.name : typeof e}`);
+      failed++;
+    }
+  }
+
+  // ── Must-reject inputs (direct values and strict-parsed text) ──
+  // Each case must throw CanonicalisationError from canonicalize().
+  const mustReject: Array<[string, () => unknown]> = [
+    // Unpaired surrogates have no UTF-8 encoding (profile §4.2); the
+    // Python reference raises. TS used to escape them as "\ud800" and,
+    // as keys, sort them in insertion order (TextEncoder ties on U+FFFD).
+    ["lone_high_surrogate", () => "\uD800"],
+    ["lone_low_surrogate", () => "x\uDC00y"],
+    ["reversed_surrogate_pair", () => "\uDE00\uD83D"],
+    ["lone_surrogate_key", () => ({ "\uD800": 1 })],
+    ["lone_surrogate_keys_tie", () => ({ "\uD801": 2, "\uD800": 1 })],
+    ["lone_surrogate_via_parseStrict", () => parseStrict('{"s":"\\ud800"}')],
+    // Number integers outside ±(2^53 − 1) print as rounded or exponent
+    // form ("1e+21"), not the integer the Python reference emits.
+    ["unsafe_number_1e21", () => ({ amount: 1e21 })],
+    ["unsafe_number_2p60", () => ({ amount: 2 ** 60 })],
+    ["unsafe_number_2p53", () => 9007199254740992],
+    ["unsafe_number_via_JSON_parse", () => JSON.parse("123456789012345678901234567890")],
+    // Non-JSON object types used to canonicalise as "{}" (collisions).
+    ["date_object", () => ({ when: new Date(0) })],
+    ["map_object", () => ({ m: new Map([["a", 1]]) })],
+    ["set_object", () => new Set([1])],
+    ["typed_array", () => ({ b: new Uint8Array([104, 105]) })],
+    ["boxed_string", () => new String("x")],
+    ["class_instance", () => [new (class Money { amount = 1; })()]],
+    // Sparse arrays used to serialise as "[1,,3]" (invalid JSON).
+    ["sparse_array", () => [1, , 3]],
+  ];
+  for (const [name, make] of mustReject) {
+    try {
+      const out = canonicalize(make());
+      console.log(`  FAIL  ${name}: expected CanonicalisationError but got ${new TextDecoder().decode(out)}`);
+      failed++;
+    } catch (e) {
+      if (e instanceof CanonicalisationError) {
+        passed++;
+      } else {
+        console.log(`  FAIL  ${name}: wrong error type: ${e instanceof Error ? e.constructor.name : typeof e}`);
+        failed++;
+      }
+    }
+  }
+
+  // ── Version constants mirror @actenon/protocol-types ──────────
+  for (const name of [
+    "PROTOCOL_VERSION",
+    "CANONICALISATION_PROFILE",
+    "LEGACY_CANONICALISATION_PROFILE",
+    "ACCEPTED_CANONICALISATION_PROFILES",
+  ] as const) {
+    const a = JSON.stringify(runtimeVersion[name]);
+    const b = JSON.stringify(typesVersion[name]);
+    if (a === b) {
+      passed++;
+    } else {
+      console.log(`  FAIL  version_constant_${name}: runtime ${a} != protocol-types ${b}`);
+      failed++;
+    }
+  }
+
+  // ── Key order is UTF-8 bytes, not UTF-16 code units ───────────
+  {
+    const got = canonicalizeJson(parseStrict('{"\\ud83d\\ude00":2,"\\ue000":1}'));
+    const want = '{"\uE000":1,"\u{1F600}":2}';
+    if (got === want) {
+      passed++;
+    } else {
+      console.log(`  FAIL  key_order_utf8_not_utf16: expected ${want}, got ${got}`);
       failed++;
     }
   }

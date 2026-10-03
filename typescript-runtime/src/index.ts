@@ -16,13 +16,16 @@ export {
   MAX_JSON_DEPTH,
 } from "./canonicalisation.js";
 
-// Re-export version constants and types from @actenon/protocol-types.
+// Version constants are defined locally: @actenon/protocol-types ships
+// TypeScript source only, so re-exporting its VALUES would make this
+// package unloadable under Node.js. Types are erased at build time and
+// are safe to re-export.
 export {
   PROTOCOL_VERSION,
   CANONICALISATION_PROFILE,
   LEGACY_CANONICALISATION_PROFILE,
   ACCEPTED_CANONICALISATION_PROFILES,
-} from "@actenon/protocol-types";
+} from "./version.js";
 
 export type {
   ProtocolVersion,

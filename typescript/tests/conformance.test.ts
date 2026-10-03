@@ -5,8 +5,18 @@ import {
   normaliseIdentifier,
   PREFIXES,
 } from "../src/identifiers.js";
-import { canonicalizeJson, CanonicalisationError } from "../src/canonicalisation.js";
-import { RefusalCode, DisclosurePolicy, refusalToDisclosedCode } from "../src/refusal-codes.js";
+import { canonicalizeJson, canonicalizeBytes, CanonicalisationError } from "../src/canonicalisation.js";
+import {
+  RefusalCode,
+  DisclosurePolicy,
+  refusalToDisclosedCode,
+  refusalToRetryable,
+  refusalToInternalCode,
+  resolveAlias,
+  COMPATIBILITY_ALIASES,
+} from "../src/refusal-codes.js";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { ExecutionMode } from "../src/execution-modes.js";
 
 describe("identifiers", () => {
@@ -98,6 +108,70 @@ describe("canonicalisation", () => {
     const expected = '{"a":"hello","b":[true,null,42],"z":1}';
     expect(canonicalizeJson(input)).toBe(expected);
   });
+
+  test("sorts keys by UTF-8 bytes, not UTF-16 code units", () => {
+    // U+E000 (EE 80 80) < U+1F600 (F0 9F 98 80) in UTF-8; UTF-16 order is the reverse.
+    expect(canonicalizeJson({ "\u{1F600}": 2, "\uE000": 1 })).toBe('{"\uE000":1,"\u{1F600}":2}');
+  });
+
+  test("rejects unpaired surrogates in values and keys", () => {
+    for (const v of ["\uD800", "\uDC00", "x\uDBFFy", "\uDE00\uD83D", { k: "\uDFFF" }, { "\uD800": 1 }, [["\uD800"]]]) {
+      expect(() => canonicalizeJson(v)).toThrow(CanonicalisationError);
+      expect(() => canonicalizeBytes(v)).toThrow(CanonicalisationError);
+    }
+    // Two distinct lone-surrogate keys must not produce insertion-order-dependent output.
+    expect(() => canonicalizeJson({ "\uD800": 1, "\uD801": 2 })).toThrow(CanonicalisationError);
+    expect(() => canonicalizeJson(JSON.parse('{"s":"\\ud800"}'))).toThrow(CanonicalisationError);
+  });
+
+  test("accepts properly paired surrogates", () => {
+    expect(canonicalizeJson(JSON.parse('"\\ud83d\\ude00"'))).toBe('"\u{1F600}"');
+  });
+
+  test("rejects Number integers outside the safe range (use BigInt)", () => {
+    // 1e21.toString() is "1e+21" and 2**60 prints as 1152921504606847000:
+    // neither is the integer the Python reference would emit.
+    for (const n of [1e21, 2 ** 60, 9007199254740992, -9007199254740992, Number.MAX_VALUE]) {
+      expect(() => canonicalizeJson(n)).toThrow(CanonicalisationError);
+      expect(() => canonicalizeJson({ amount: n })).toThrow(CanonicalisationError);
+    }
+    expect(canonicalizeJson(9007199254740991)).toBe("9007199254740991");
+    expect(canonicalizeJson(-9007199254740991)).toBe("-9007199254740991");
+    expect(canonicalizeJson(2n ** 60n)).toBe("1152921504606846976");
+  });
+
+  test("rejects values that are not JSON types instead of serialising them as {}", () => {
+    class Money {
+      amount = 1;
+    }
+    const notJson: unknown[] = [
+      new Date(0),
+      new Map([["a", 1]]),
+      new Set([1]),
+      new Uint8Array([1, 2]),
+      new ArrayBuffer(2),
+      /x/,
+      new Error("x"),
+      new Money(),
+      new String("x"),
+      new Number(1),
+      Promise.resolve(1),
+    ];
+    for (const v of notJson) {
+      expect(() => canonicalizeJson(v)).toThrow(CanonicalisationError);
+      expect(() => canonicalizeJson({ nested: [v] })).toThrow(CanonicalisationError);
+    }
+  });
+
+  test("rejects sparse arrays instead of emitting invalid JSON", () => {
+    expect(() => canonicalizeJson([1, , 3])).toThrow(CanonicalisationError);
+    expect(() => canonicalizeJson(new Array(2))).toThrow(CanonicalisationError);
+  });
+
+  test("accepts plain and null-prototype objects", () => {
+    expect(canonicalizeJson(Object.assign(Object.create(null), { b: 1, a: 2 }))).toBe('{"a":2,"b":1}');
+    expect(canonicalizeJson(JSON.parse('{"__proto__":{"x":1}}'))).toBe('{"__proto__":{"x":1}}');
+  });
 });
 
 describe("refusal codes", () => {
@@ -111,6 +185,36 @@ describe("refusal codes", () => {
 
   test("disclosed_code for REPLAY_DETECTED is REPLAY_DETECTED (safe to disclose)", () => {
     expect(refusalToDisclosedCode(RefusalCode.REPLAY_DETECTED, DisclosurePolicy.PUBLIC)).toBe("REPLAY_DETECTED");
+  });
+
+  test("mirrors the compiled catalogue (codes, disclosure, retryability, aliases)", () => {
+    const catalogue = JSON.parse(
+      readFileSync(join(import.meta.dir, "../../python/actenon_protocol/data/catalogue.v1.json"), "utf-8")
+    );
+    const codes = catalogue.codes as Array<{ code: string; disclosed_code: string; retryable: boolean }>;
+    expect((Object.values(RefusalCode) as string[]).sort()).toEqual(codes.map((c) => c.code).sort());
+    expect({ ...COMPATIBILITY_ALIASES }).toEqual(catalogue.compatibility_aliases);
+    for (const c of codes) {
+      expect(refusalToDisclosedCode(c.code, DisclosurePolicy.PUBLIC)).toBe(c.disclosed_code);
+      expect(refusalToRetryable(c.code)).toBe(c.retryable);
+    }
+    // Aliases resolve BEFORE disclosure/retryability (DUPLICATE_REPLAY used to
+    // disclose OUTCOME_UNKNOWN with retryable=true).
+    for (const [alias, canonical] of Object.entries(catalogue.compatibility_aliases as Record<string, string>)) {
+      const entry = codes.find((c) => c.code === canonical)!;
+      expect(refusalToDisclosedCode(alias, DisclosurePolicy.PUBLIC)).toBe(entry.disclosed_code);
+      expect(refusalToRetryable(alias)).toBe(entry.retryable);
+      expect(refusalToInternalCode(alias, DisclosurePolicy.TRUSTED)).toBe(canonical);
+      expect(refusalToInternalCode(alias, DisclosurePolicy.PUBLIC)).toBeNull();
+    }
+  });
+
+  test("unknown codes named like Object.prototype members are unknown, not inherited", () => {
+    for (const code of ["toString", "constructor", "__proto__", "hasOwnProperty"]) {
+      expect(refusalToDisclosedCode(code, DisclosurePolicy.PUBLIC)).toBe("OUTCOME_UNKNOWN");
+      expect(refusalToRetryable(code)).toBe(true);
+      expect(() => resolveAlias(code)).toThrow();
+    }
   });
 });
 

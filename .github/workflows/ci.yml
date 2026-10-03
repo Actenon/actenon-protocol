@@ -8,6 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  required-checks:
+    # Branch protection and the publish workflows' release gate read
+    # .github/required-checks.json. Every name in it must be produced by a job.
+    name: Required-check names exist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pyyaml
+      - run: python scripts/release_gate.py validate
+
   conformance:
     name: Conformance suite (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -90,6 +103,21 @@ jobs:
         working-directory: typescript
         run: bun test
 
+      - name: Set up Node.js (plain-Node import check)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build (tsc → dist/)
+        working-directory: typescript
+        run: bun run build
+
+      - name: Smoke-test npm pack output under plain Node.js
+        # The package used to ship only .ts source as main, which Node refuses
+        # (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING).
+        working-directory: typescript
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol-types canonicalizeJson canonicalizeBytes CanonicalisationError RefusalCode refusalToDisclosedCode resolveAlias PROTOCOL_VERSION isValidIdentifier ExecutionMode ExecutionOutcome
+
   typescript-runtime:
     name: TypeScript runtime (@actenon/protocol)
     runs-on: ubuntu-latest
@@ -119,6 +147,12 @@ jobs:
         working-directory: typescript-runtime
         run: bun run build
 
+      - name: Smoke-test dist/ under plain Node.js
+        # Bun transpiles TS inside node_modules; Node does not. This catches
+        # a dist/ that imports a TypeScript-source-only package at runtime.
+        working-directory: typescript-runtime
+        run: node tests/node-import.mjs
+
       - name: Run canonicalisation conformance suite
         working-directory: typescript-runtime
         run: bun run tests/conformance.ts
@@ -126,3 +160,7 @@ jobs:
       - name: Verify package (npm pack dry-run)
         working-directory: typescript-runtime
         run: npm pack --dry-run
+
+      - name: Smoke-test npm pack output under plain Node.js
+        working-directory: typescript-runtime
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol canonicalize canonicalizeBytes canonicalizeJson parseStrict CanonicalisationError PROTOCOL_VERSION ACCEPTED_CANONICALISATION_PROFILES

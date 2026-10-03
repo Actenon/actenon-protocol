@@ -24,16 +24,18 @@ The renderer rewrites only the text between::
 
 Inside that block it emits, in order:
 
-  (a) the four repo rows as a markdown table, with the row matching
+  (a) one markdown table row per ``repos:`` entry, with the row matching
       ``--repo`` marked ``← you are here``
   (b) a blank line
   (c) the ``Optional`` line, rendered from the ``optional:`` section of
       ``ecosystem.yaml``::
 
-          **Optional:** [`actenon-cloud`](https://github.com/Actenon/actenon-cloud)
-          — a managed control plane (source-available; see its LICENSE). Not
-          required by any component above; every capability in this ecosystem
-          works without it.
+          **Optional:** `actenon-cloud` — a managed control plane (private
+          repository, not publicly available). Not required by any component
+          above; every capability in this ecosystem works without it.
+
+      An entry with a ``url`` is rendered as a link; one without (a private
+      repository) as a plain name.
 
 The "Not required by any component above" clause is load-bearing: WO-9's
 ``test_cloud_optional.py`` makes it machine-checkable, which is precisely
@@ -130,15 +132,17 @@ def _row_for_repo(repo: dict[str, Any], here: bool) -> str:
 def _optional_line(opt: dict[str, Any]) -> str:
     """Render the Optional line for an `optional` entry.
 
-    The trailing 'Not required by any component above; ...' clause is
-    load-bearing: WO-9's test_cloud_optional.py greps for it verbatim.
+    ``url`` is optional: a component without a public URL (a private
+    repository) is rendered as a plain name, never as a link readers of a
+    public README cannot open.
     """
     name = opt["name"]
-    url = opt["url"]
+    url = opt.get("url")
     summary = opt["summary"]
     licence = opt["licence"]
     note = opt["note"].replace("\n", " ").strip()
-    return f"**Optional:** [`{name}`]({url}) — {summary} ({licence}). {note}"
+    label = f"[`{name}`]({url})" if url else f"`{name}`"
+    return f"**Optional:** {label} — {summary} ({licence}). {note}"
 
 
 def render_table(here_repo: str) -> str:

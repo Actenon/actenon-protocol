@@ -1,0 +1,4 @@
+# Conformance vectors are hash-locked byte for byte (conformance/vectors.sha256):
+# never let line-ending conversion rewrite them.
+conformance/vectors/** -text
+conformance/vectors.sha256 -text

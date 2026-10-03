@@ -8,7 +8,7 @@ The canonicalisation profile specification is at [`canonicalisation/ACTENON-JCS-
 
 The Actenon protocol uses ONE canonicalisation profile for all newly-minted artefacts: **`ACTENON-JCS-STRICT-1`**.
 
-`ACTENON-JCS-STRICT-1` is a strict subset of [RFC 8785 (JCS)](https://www.rfc-editor.org/rfc/rfc8785.html) that rejects floating-point values entirely. The full specification is in [`canonicalisation/ACTENON-JCS-STRICT-1.md`](../canonicalisation/ACTENON-JCS-STRICT-1.md).
+`ACTENON-JCS-STRICT-1` is a strict subset of [RFC 8785 (JCS)](https://www.rfc-editor.org/rfc/rfc8785.html) that rejects floating-point values entirely. One deliberate difference: object keys are sorted by UTF-8 bytes rather than RFC 8785's UTF-16 code units (the orders differ only for U+E000–U+FFFF versus astral characters; see §4.1 of the profile), so an unmodified RFC 8785 library is not a conforming implementation. The full specification is in [`canonicalisation/ACTENON-JCS-STRICT-1.md`](../canonicalisation/ACTENON-JCS-STRICT-1.md).
 
 ## Where the profile appears on the wire
 
