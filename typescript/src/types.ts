@@ -1,3 +1,4 @@
+import type { EffectReference } from "./effects.js";
 /**
  * TypeScript types for the Actenon protocol artefacts.
  *
@@ -106,6 +107,8 @@ export interface ExecutionProof {
   custom_claims?: Record<string, unknown>;
   /** Signed extension object. `authority` is the revocable grant reference. */
   extensions?: {
+    effect?: EffectReference;
+    [name: string]: unknown;
     authority?: {
       issuer: string;
       grant_id: string;

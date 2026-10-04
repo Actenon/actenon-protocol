@@ -2,11 +2,11 @@
 
 This document specifies how an external implementation of the Actenon
 protocol can run the conformance vectors and claim
-**"Actenon-compatible v1.5.0"**.
+**"Actenon-compatible v1.6.0"**.
 
 ## What "Actenon-compatible" means
 
-An implementation is Actenon-compatible v1.5.0 if, and only if, it:
+An implementation is Actenon-compatible v1.6.0 if, and only if, it:
 
 1. **Accepts** every vector in `conformance/vectors/*/valid/` as valid
    (schema-constructable, no validation errors).
@@ -126,7 +126,7 @@ For implementations in other languages (Go, Rust, TypeScript, etc.):
    `{"a": 1, "a": 2}`. `oversized_structure` is a string of 1,048,576 `x`
    characters. `non_string_key`, `unsupported_type_set` and
    `unsupported_type_bytes` only apply where the language can express them.
-6. If all vectors pass, your implementation is Actenon-compatible v1.5.0.
+6. If all vectors pass, your implementation is Actenon-compatible v1.6.0.
 
 ## Vector inventory
 
@@ -138,7 +138,8 @@ For implementations in other languages (Go, Rust, TypeScript, etc.):
 | `refusal` | 20 | 5 | 25 | All 20 refusal codes from the catalogue, two-layer disclosure, retryability, code-to-umbrella mapping |
 | `execution-mode` | 10 | 0 | 10 | Mode distinction (brokered vs resource_owned), mode-specific field constraints, finality |
 | `execution-result` | 4 | 4 | 8 | Discriminated union: disjoint field sets for brokered vs resource-owned results |
-| **Total** | **83** | **46** | **129** | |
+| `effect` | 13 | 14 | 27 | Descriptor hashing, reservation references, consequence certainty |
+| **Total** | **96** | **60** | **156** | |
 
 ## Regenerating vectors
 
@@ -149,14 +150,16 @@ python conformance/generate_vectors.py
 ```
 
 The generator produces proof, receipt, refusal, and execution-mode vectors.
-Canonicalisation and execution-result vectors are hand-authored and
+Canonicalisation, execution-result and effect vectors are hand-authored and
 committed directly.
 
 ## Versioning
 
 - **Vector format**: v1 (the `.v1.json` suffix on every file).
 - **Catalogue version**: 1 (from `refusals/catalogue.v1.yaml`).
-- **Protocol version**: v1.2.0.
+- **Protocol version**: v1.3.0.
 
 New vectors MAY be added in point releases. Existing vectors WILL NOT be
 removed or have their expected results changed within protocol v1.x.
+
+Effect validators implement `effect_identity(descriptor)`, `validate_effect_reference(artefact)` and `validate_effect_evidence(artefact)`. Every effect vector invokes the supplied implementation. Missing methods fail; they are never marked compatible or language-specific skips.

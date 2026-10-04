@@ -1,0 +1,11 @@
+{
+  "name": "reference_unknown_profile",
+  "operation": "reference",
+  "artefact": {
+    "profile": "UNKNOWN",
+    "effect_id": "effect_bb109f2b4879be4b6162df4dfea7c294ad474a504776e745685c3a032fc6e5db",
+    "reservation_id": "reservation_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "owner_attempt_id": "exec_bbbbbbbbbbbbbbbb"
+  },
+  "expected_validation": "invalid"
+}

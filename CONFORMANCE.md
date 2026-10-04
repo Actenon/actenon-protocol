@@ -16,9 +16,9 @@ are legitimate. Neither subsumes the other.
 |---|---|---|
 | **Lives in** | [`actenon-protocol/conformance/`](conformance/) | [`actenon-kernel/actenon/conformance/`](https://github.com/Actenon/actenon-kernel/tree/main/actenon/conformance) |
 | **Tests** | The **wire format** — what every artefact looks like on the wire | The **verifier** — what a valid PCCB is and how it is checked |
-| **Vector count** | 129 (83 valid + 46 invalid) | 53 tests in Conformance 1.1.0 (actenon-kernel ≥ 1.3.0) |
+| **Vector count** | 156 (96 valid + 60 invalid) | 53 tests in Conformance 1.1.0 (actenon-kernel ≥ 1.3.0) |
 | **Categories** | Canonicalisation, proof shape, receipt shape, refusal shape, execution-result shape, execution-mode shape | Canonicalisation strict, verifier SDK (PCCB validation), replay, countersignature, execution state, outcome attestation |
-| **Pass mark** | "Actenon-compatible v1.5.0" | "Actenon Verified (Conformance 1.1.0)" |
+| **Pass mark** | "Actenon-compatible v1.6.0" | "Actenon Verified (Conformance 1.1.0)" |
 | **Who needs it** | Anyone implementing the wire format in a new language or framework | Anyone implementing a verifier that decides what a valid PCCB is |
 | **Runs on every PR** | Yes ([protocol CI](.github/workflows/ci.yml)) | Yes ([kernel CI](https://github.com/Actenon/actenon-kernel/blob/main/.github/workflows/ci.yml)) |
 
@@ -28,13 +28,13 @@ are legitimate. Neither subsumes the other.
 
 ### If you are implementing the wire format (a new SDK, a new language binding)
 
-You must pass **Protocol conformance** (129 vectors). Your implementation
+You must pass **Protocol conformance** (156 vectors). Your implementation
 must accept every valid vector and reject every invalid vector. The
 [Runner Specification](conformance/RUNNER_SPEC.md) defines the interface,
 and the [standalone runner](conformance/runner.py) is a ready-to-use
 Python script you can subclass.
 
-Once you pass, you may claim **"Actenon-compatible v1.5.0"**.
+Once you pass, you may claim **"Actenon-compatible v1.6.0"**.
 
 ### If you are implementing a verifier (a component that decides what a valid PCCB is)
 
@@ -104,7 +104,7 @@ actenon-kernel conformance run --json  # JSON output for CI
 
 | Mark | Suite | Version | Meaning |
 |---|---|---|---|
-| **Actenon-compatible v1.5.0** | Protocol | v1.5.0 | Accepts every valid wire-format vector; rejects every invalid one |
+| **Actenon-compatible v1.6.0** | Protocol | v1.6.0 | Accepts every valid wire-format vector; rejects every invalid one |
 | **Actenon Verified (Conformance 1.1.0)** | Kernel | 1.1.0 | Verifier makes correct ALLOW/REFUSE decisions on every kernel conformance test (53 in 1.1.0), including protocol 13 edge binding |
 
 Both marks are **versioned**. When the wire format changes (Protocol) or
@@ -116,7 +116,7 @@ guaranteed within a major version.
 
 ## See also
 
-- [Protocol conformance vectors](conformance/vectors/) — the 129 hash-locked JSON vectors
+- [Protocol conformance vectors](conformance/vectors/) — the 156 hash-locked JSON vectors
 - [Protocol Runner Specification](conformance/RUNNER_SPEC.md) — the interface external implementations must satisfy
 - [Kernel conformance documentation](https://github.com/Actenon/actenon-kernel/blob/main/docs/CONFORMANCE.md) — the verifier suite and its versions
 - [VERSIONING.md](VERSIONING.md) — how protocol versioning works

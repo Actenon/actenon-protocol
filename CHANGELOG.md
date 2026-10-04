@@ -12,6 +12,19 @@ git tags, and PyPI carry). The **wire protocol** version is declared separately 
 (`PROTOCOL_VERSION`) and only changes when wire semantics change. The two may
 legitimately diverge; see VERSIONING.md § "Protocol version vs package version".
 
+## [1.6.0] — unreleased
+
+### Added
+
+* Wire 1.3.0: optional signed `extensions.effect` reservation reference and normative `ACTENON-EFFECT-1` profile. An explicitly configured effect-protected edge must verify ownership and exact action/target/parameters against an atomic ledger. Legacy extension-ignoring verifiers do not acquire this guarantee.
+* Portable effect descriptors and SHA256 identity helpers in Python and Node.js TypeScript. Exact and reviewed semantic projections are distinct; attempts, grants and trace nonces do not define a logical effect.
+* Consequence evidence distinguishes COMMITTED, NOT_EXECUTED and AMBIGUOUS without renaming stable receipt/result enums. Timeout after dispatch is not non-execution; ambiguity holds the reservation and budget pending trusted reconciliation.
+* 27 locked vectors, exercised by the standalone runner, JSON Schemas, Python models and TypeScript helpers. Existing 129 vectors remain byte-identical.
+
+### Scope
+
+* This is the portable contract and reference implementation, not completed runtime/ledger integration. PostgreSQL coordination, executor ownership, resource verification, reconciliation and full SDK differential testing must pass before effect-protected execution is claimed. No package or tag is published by this change.
+
 ## [1.5.0]
 
 ### Security

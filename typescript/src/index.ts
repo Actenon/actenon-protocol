@@ -44,3 +44,6 @@ export type {
   EvidenceLink,
   AuthorisedExecutionIntent,
 } from "./types.js";
+
+export { EFFECT_PROFILE, EffectError, effectIdentity, validateEffectOutcome, validateEffectReference, validateEffectEvidence } from "./effects.js";
+export type { EffectOutcome, EffectDescriptor, EffectReference, EffectEvidence } from "./effects.js";

@@ -1,0 +1,22 @@
+{
+  "name": "exact_changed_namespace",
+  "operation": "identity",
+  "input": {
+    "profile": "ACTENON-EFFECT-1",
+    "namespace": "merchant:acme:staging",
+    "kind": "exact",
+    "action_type": "payment.refund",
+    "target": {
+      "type": "payment-provider",
+      "id": "stripe/acme"
+    },
+    "parameters": {
+      "payment_id": "payment_123",
+      "amount_minor": 1000,
+      "currency": "USD",
+      "logical_refund_id": "refund_456"
+    }
+  },
+  "expected_validation": "valid",
+  "expected_effect_id": "effect_717a86483382aec7a9554aa26cb89258fefd6b501cdacf6ae8529daa98c8c3ff"
+}

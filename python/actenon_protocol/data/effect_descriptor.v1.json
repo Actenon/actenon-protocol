@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:effect-descriptor:v1",
+  "title": "EffectDescriptor",
+  "type": "object",
+  "required": [
+    "profile",
+    "namespace",
+    "kind",
+    "action_type",
+    "target"
+  ],
+  "properties": {
+    "profile": {
+      "const": "ACTENON-EFFECT-1"
+    },
+    "namespace": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+    },
+    "kind": {
+      "enum": [
+        "exact",
+        "semantic"
+      ]
+    },
+    "action_type": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*[\\*\\?\\[\\]])\\S(?:[\\s\\S]*\\S)?$"
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!.*[\\*\\?\\[\\]])\\S(?:[\\s\\S]*\\S)?$"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!.*[\\*\\?\\[\\]])\\S(?:[\\s\\S]*\\S)?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "parameters": {
+      "type": "object"
+    },
+    "semantic_key": {
+      "type": "object",
+      "minProperties": 1
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "exact"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "parameters"
+        ],
+        "not": {
+          "required": [
+            "semantic_key"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "semantic"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "semantic_key"
+        ],
+        "not": {
+          "required": [
+            "parameters"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "semantic_refund",
+  "operation": "identity",
+  "input": {
+    "profile": "ACTENON-EFFECT-1",
+    "namespace": "merchant:acme:production",
+    "kind": "semantic",
+    "action_type": "payment.refund",
+    "target": {
+      "type": "payment-provider",
+      "id": "stripe/acme"
+    },
+    "semantic_key": {
+      "payment_id": "payment_123",
+      "logical_refund_id": "refund_456"
+    }
+  },
+  "expected_validation": "valid",
+  "expected_effect_id": "effect_11fae7e88e2e4a4ae2995805505dd6fc5e2fd9303496838971aab5543ebbb622"
+}

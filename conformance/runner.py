@@ -128,6 +128,15 @@ class Validator(Protocol):
     def validate_execution_mode(self, input_value: dict) -> tuple[bool, str | None]:
         """Return (is_valid, error_message) for execution-mode vectors."""
 
+    def effect_identity(self, descriptor: dict) -> str:
+        """Return the ACTENON-EFFECT-1 identity, or raise on malformed input."""
+
+    def validate_effect_reference(self, artefact: dict) -> tuple[bool, str | None]:
+        """Validate a signed effect reservation reference."""
+
+    def validate_effect_evidence(self, artefact: dict) -> tuple[bool, str | None]:
+        """Validate consequence certainty; a digest is not authentication."""
+
 
 # ---------------------------------------------------------------------------
 # Reference implementation validator (uses the Python reference)
@@ -180,6 +189,26 @@ class ReferenceValidator:
         # canonicalize_bytes, not canonicalize_json: the 1 MiB output limit
         # is only enforced on the encoded form.
         return self._canonicalize_bytes(input_value).decode("utf-8")
+
+    def effect_identity(self, descriptor: dict) -> str:
+        from actenon_protocol.effects import effect_identity
+        return effect_identity(descriptor)
+
+    def validate_effect_reference(self, artefact: dict) -> tuple[bool, str | None]:
+        from actenon_protocol.types import EffectReference
+        try:
+            EffectReference.model_validate(artefact)
+            return True, None
+        except Exception as exc:
+            return False, str(exc)
+
+    def validate_effect_evidence(self, artefact: dict) -> tuple[bool, str | None]:
+        from actenon_protocol.types import EffectEvidence
+        try:
+            EffectEvidence.model_validate(artefact)
+            return True, None
+        except Exception as exc:
+            return False, str(exc)
 
     def parse_json(self, text: str) -> Any:
         def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict:
@@ -314,8 +343,32 @@ class ConformanceRunner:
             return self._run_execution_mode(vector)
         elif cat == "execution-result":
             return self._run_execution_result(vector)
+        elif cat == "effect":
+            return self._run_effect(vector)
         else:
             return VectorResult(vector, False, f"unknown category: {cat}")
+
+    def _run_effect(self, vector: Vector) -> VectorResult:
+        operation = vector.data.get("operation")
+        method_name = {
+            "identity": "effect_identity",
+            "reference": "validate_effect_reference",
+            "evidence": "validate_effect_evidence",
+        }.get(operation)
+        method = getattr(self.validator, method_name, None) if method_name else None
+        if not callable(method):
+            return VectorResult(vector, False, f"missing effect implementation: {operation}")
+        if operation != "identity":
+            return self._run_artefact(vector, method)
+        try:
+            actual = method(vector.data["input"])
+        except Exception as exc:
+            if vector.data.get("expected_validation") == "invalid":
+                return VectorResult(vector, True, f"correctly rejected: {exc}")
+            return VectorResult(vector, False, f"effect identity raised: {exc}")
+        if vector.data.get("expected_validation") != "valid":
+            return VectorResult(vector, False, "invalid effect descriptor was accepted")
+        return VectorResult(vector, actual == vector.data.get("expected_effect_id"), "effect digest comparison")
 
     def _run_canonicalisation(self, vector: Vector) -> VectorResult:
         data = vector.data

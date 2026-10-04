@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:effect-evidence:v1",
+  "title": "EffectEvidence",
+  "description": "Consequence certainty carried in a signed receipt evidence link. A digest alone is not authentication.",
+  "type": "object",
+  "required": [
+    "profile",
+    "effect_id",
+    "reservation_id",
+    "owner_attempt_id",
+    "outcome",
+    "execution_occurred",
+    "evidence_hash"
+  ],
+  "properties": {
+    "profile": {
+      "const": "ACTENON-EFFECT-1"
+    },
+    "effect_id": {
+      "type": "string",
+      "pattern": "^effect_[0-9a-f]{64}$"
+    },
+    "reservation_id": {
+      "type": "string",
+      "pattern": "^reservation_[0-9a-f]{32}$"
+    },
+    "owner_attempt_id": {
+      "type": "string",
+      "pattern": "^exec_[0-9a-f]{16,}$"
+    },
+    "outcome": {
+      "enum": [
+        "COMMITTED",
+        "NOT_EXECUTED",
+        "AMBIGUOUS"
+      ]
+    },
+    "execution_occurred": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "evidence_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "COMMITTED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "execution_occurred": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "NOT_EXECUTED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "execution_occurred": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "AMBIGUOUS"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "execution_occurred": {
+            "enum": [
+              null,
+              true
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
