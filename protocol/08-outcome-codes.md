@@ -12,7 +12,7 @@ When a verifier examines an `ExecutionProof`, the outcome is one of:
 | Outcome | Meaning | Refusal code (if any) |
 |---|---|---|
 | `VERIFIED` | The proof is valid and the action may proceed. | (none) |
-| `REFUSED` | The proof was rejected. | One of the 20 codes from `protocol/07-refusal.md`. |
+| `REFUSED` | The proof was rejected. | One of the codes from `protocol/07-refusal.md`. |
 
 There is no third outcome. The verifier either accepts the proof or refuses it with a specific code.
 

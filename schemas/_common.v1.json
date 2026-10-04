@@ -61,7 +61,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "description": "The action type. Examples: 'payment.refund', 'file.delete', 'iam.grant_role', 'message.send'."
+          "description": "The action type. This string is the capability. It is one exact name, such as a Scan-named power ('filesystem.write', 'http.get') or a compiled id ('airlock.' plus a digest). Glob characters (*, ?, [, ]) are grant-scope patterns, not capabilities. Examples: 'payment.refund', 'file.delete', 'iam.grant_role', 'message.send'."
         },
         "parameters": {
           "type": "object",

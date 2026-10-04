@@ -57,6 +57,8 @@ Under `trusted`, the `disclosed_code` is the same as under `public`. The `intern
 * `TARGET_MISMATCH`
 * `ACTION_MISMATCH`
 * `PARAMETER_MISMATCH`
+* `SCOPE_CAPABILITY_MISMATCH` (edge allow-list; not a parameter mismatch)
+* `SCOPE_MODE_INVALID` (proof is not single-use; not a parameter mismatch)
 
 Plus all the codes that are already detailed under `public` (they appear identically in `internal_code`).
 

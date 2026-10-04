@@ -41,13 +41,13 @@ See `protocol/11-disclosure-policy.md` for the full policy specification.
 
 ## Refusal-code catalogue
 
-The 20 canonical refusal codes are organised into 6 categories:
+The canonical refusal codes are organised into 6 categories:
 
 | Category | Codes |
 |---|---|
 | `request_shape` | `MALFORMED_REQUEST`, `UNSUPPORTED_PROTOCOL_VERSION`, `CANONICALISATION_FAILURE` |
 | `proof_presence` | `PROOF_MISSING` |
-| `proof_validity` | `PROOF_INVALID` (umbrella), `ISSUER_UNTRUSTED`, `SIGNATURE_INVALID`, `PROOF_EXPIRED`, `PROOF_NOT_YET_VALID`, `AUDIENCE_MISMATCH`, `TARGET_MISMATCH`, `ACTION_MISMATCH`, `PARAMETER_MISMATCH`, `REPLAY_DETECTED` |
+| `proof_validity` | `PROOF_INVALID` (umbrella), `ISSUER_UNTRUSTED`, `SIGNATURE_INVALID`, `PROOF_EXPIRED`, `PROOF_NOT_YET_VALID`, `AUDIENCE_MISMATCH`, `TARGET_MISMATCH`, `ACTION_MISMATCH`, `PARAMETER_MISMATCH`, `SCOPE_CAPABILITY_MISMATCH`, `SCOPE_MODE_INVALID`, `REPLAY_DETECTED` |
 | `authority_state` | `AUTHORITY_REVOKED`, `POLICY_REFUSAL` |
 | `provider` | `CREDENTIAL_UNAVAILABLE`, `PROVIDER_REFUSAL`, `PROVIDER_FAILURE` |
 | `outcome` | `OUTCOME_UNKNOWN` |
@@ -69,7 +69,6 @@ The existing `actenon-kernel` `FailureCode` enum members are preserved as aliase
 | `INTENT_MISMATCH` | `PARAMETER_MISMATCH` |
 | `TARGET_MISMATCH` | `TARGET_MISMATCH` (same) |
 | `ACTION_HASH_MISMATCH` | `PARAMETER_MISMATCH` |
-| `SCOPE_CAPABILITY_MISMATCH` | `PARAMETER_MISMATCH` |
 | `TENANT_MISMATCH` | `TARGET_MISMATCH` |
 | `SUBJECT_MISMATCH` | `TARGET_MISMATCH` |
 | `PROOF_PAYLOAD_INVALID` | `MALFORMED_REQUEST` |
@@ -101,6 +100,8 @@ The `retryable` field is derived from the `internal_code` (or `disclosed_code` i
 | `TARGET_MISMATCH` | false |
 | `ACTION_MISMATCH` | false |
 | `PARAMETER_MISMATCH` | false |
+| `SCOPE_CAPABILITY_MISMATCH` | false |
+| `SCOPE_MODE_INVALID` | false |
 | `REPLAY_DETECTED` | false |
 | `AUTHORITY_REVOKED` | false |
 | `POLICY_REFUSAL` | false |

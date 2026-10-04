@@ -123,9 +123,26 @@
       "disclosure_note": "Detailed code; trusted disclosure only.",
       "compatibility_aliases": [
         "ACTION_HASH_MISMATCH",
-        "INTENT_MISMATCH",
-        "SCOPE_CAPABILITY_MISMATCH"
+        "INTENT_MISMATCH"
       ]
+    },
+    {
+      "code": "SCOPE_CAPABILITY_MISMATCH",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "SCOPE_CAPABILITY_MISMATCH",
+      "retryable": false,
+      "description": "The intent's capability is not an element of the edge's declared\nscope_capabilities, or that declaration is empty. Comparison is exact\nstring equality. A glob (`*`, `?`, `[`, `]`) is not a capability, and\nan empty declaration is not widened to the attempted action or to `*`.\nThis is not a parameter mismatch: the action hash may still match.\n",
+      "disclosure_note": "Post-authentication. Public callers see `PROOF_INVALID`. Trusted\ncallers see `SCOPE_CAPABILITY_MISMATCH`. Do not collapse this to\n`PARAMETER_MISMATCH`.\n"
+    },
+    {
+      "code": "SCOPE_MODE_INVALID",
+      "category": "proof_validity",
+      "disclosed_code": "PROOF_INVALID",
+      "internal_code": "SCOPE_MODE_INVALID",
+      "retryable": false,
+      "description": "The proof's signed scope mode is not single-use (`scope.single_use`\nis not true, or the mode is not `exact`). Protocol v1 proofs are\nsingle-use only. A verifier MUST NOT treat the proof as reusable.\n",
+      "disclosure_note": "Post-authentication. Public callers see `PROOF_INVALID`. Trusted\ncallers see `SCOPE_MODE_INVALID`. Do not collapse this to\n`PARAMETER_MISMATCH`.\n"
     },
     {
       "code": "REPLAY_DETECTED",
@@ -213,8 +230,6 @@
     "ACTION_HASH_MISMATCH": "PARAMETER_MISMATCH",
     "ACTION_HASH_ALGORITHM_INVALID": "PARAMETER_MISMATCH",
     "ACTION_HASH_INVALID": "PARAMETER_MISMATCH",
-    "SCOPE_MODE_INVALID": "PARAMETER_MISMATCH",
-    "SCOPE_CAPABILITY_MISMATCH": "PARAMETER_MISMATCH",
     "TENANT_MISMATCH": "TARGET_MISMATCH",
     "SUBJECT_MISMATCH": "TARGET_MISMATCH",
     "PROOF_PAYLOAD_INVALID": "MALFORMED_REQUEST",

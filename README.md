@@ -3,7 +3,7 @@
 > The neutral, open, implementation-independent boundary contract for proof-bound consequential execution. Defines the wire shape every Actenon artefact speaks. Zero runtime dependencies. Any language, any framework, any cloud.
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![Version: v1.4.0](https://img.shields.io/badge/Version-v1.4.0-blue.svg)](CHANGELOG.md)
+[![Version: v1.5.0](https://img.shields.io/badge/Version-v1.5.0-blue.svg)](CHANGELOG.md)
 <!-- PYTHON-BADGE:START -->
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 <!-- PYTHON-BADGE:END -->
@@ -68,7 +68,7 @@ The Protocol is the **only** Actenon package that the other repositories share a
 The Protocol defines the **wire format** that every Actenon component speaks. It is:
 
 - **Neutral** — no runtime dependencies, no framework assumptions, no cloud requirement, no opinion on how you implement verification.
-- **Versioned** — v1.4.0 (wire format backward-compatible with v1.0.0–v1.3.0; v1.4.0 adds normative edge-binding obligations for verifiers, see [`protocol/13-edge-binding.md`](protocol/13-edge-binding.md)). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
+- **Versioned** — package v1.5.0, wire `1.2.0` (backward-compatible with wire v1.0.0–v1.1.0 and packages v1.0.0–v1.4.0). v1.4.0 added edge-binding obligations ([`protocol/13-edge-binding.md`](protocol/13-edge-binding.md)). v1.5.0 makes those refusal codes canonical and adds `extensions.authority` ([`protocol/14-capability-provenance.md`](protocol/14-capability-provenance.md)). Versioning policy in [`VERSIONING.md`](VERSIONING.md).
 - **Cross-language** — this repo's Python (PyPI) and TypeScript (npm) packages, plus the Go ([`Actenon/sdk-go`](https://github.com/Actenon/sdk-go)) and Rust ([`Actenon/sdk-rust`](https://github.com/Actenon/sdk-rust)) verifier SDKs, are tested against the same hash-locked conformance vectors. See [Multi-language SDKs](#multi-language-sdks--conformant-implementations) for the packaging status of each SDK.
 - **Hash-locked** — conformance vectors are versioned and frozen; an implementation that passes v1.0.0 vectors will keep passing them forever.
 - **Implementation-independent** — the same protocol can be implemented by Actenon, by a vendor, by an open-source competitor, or by an in-house team. Conformance, not pedigree, decides validity.
@@ -140,10 +140,10 @@ See [`canonicalisation/ACTENON-JCS-STRICT-1.md`](canonicalisation/ACTENON-JCS-ST
 
 ## Refusal taxonomy — two-layer disclosure
 
-20 canonical refusal codes organised in a two-layer model:
+Canonical refusal codes organised in a two-layer model:
 
 - **`disclosed_code`** — public-safe code returned to untrusted callers. Every proof-validity failure collapses to the `PROOF_INVALID` umbrella; the other disclosed codes (`PROOF_EXPIRED`, `PROOF_NOT_YET_VALID`, `REPLAY_DETECTED`, `AUTHORITY_REVOKED`, `POLICY_REFUSAL`, `MALFORMED_REQUEST`, …) leak no cryptographic detail.
-- **`internal_code`** — specific code disclosed only to trusted callers (`ISSUER_UNTRUSTED`, `SIGNATURE_INVALID`, `AUDIENCE_MISMATCH`, `TARGET_MISMATCH`, `ACTION_MISMATCH`, `PARAMETER_MISMATCH`). Legacy kernel/permit codes such as `TENANT_MISMATCH`, `SUBJECT_MISMATCH`, `BUDGET_EXCEEDED` and `RATE_LIMITED` are compatibility aliases that resolve to these (`resolve_alias`).
+- **`internal_code`** — specific code disclosed only to trusted callers (`ISSUER_UNTRUSTED`, `SIGNATURE_INVALID`, `AUDIENCE_MISMATCH`, `TARGET_MISMATCH`, `ACTION_MISMATCH`, `PARAMETER_MISMATCH`, `SCOPE_CAPABILITY_MISMATCH`, `SCOPE_MODE_INVALID`). Legacy kernel/permit codes such as `TENANT_MISMATCH`, `SUBJECT_MISMATCH`, `BUDGET_EXCEEDED` and `RATE_LIMITED` are compatibility aliases that resolve to these (`resolve_alias`). `SCOPE_CAPABILITY_MISMATCH` is not an alias of `PARAMETER_MISMATCH`.
 
 This prevents an attacker from probing the verifier by enumerating refusal codes, while still giving operators the specific information they need to debug. Full catalogue in [`refusals/catalogue.v1.yaml`](refusals/catalogue.v1.yaml).
 
@@ -167,8 +167,8 @@ See [`identifiers/prefixes.v1.yaml`](identifiers/prefixes.v1.yaml).
 
 | Implementation | Status | Path |
 |---|---|---|
-| **Python reference** | Stable v1.4.0 on PyPI | [`python/`](python/) — `pip install actenon-protocol` |
-| **TypeScript types** | Stable v1.4.0 on npm | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
+| **Python reference** | v1.5.0 in this repository; PyPI still serves 1.4.0 until a release is tagged | [`python/`](python/) — `pip install actenon-protocol` |
+| **TypeScript types** | v1.5.0 in this repository; npm still serves 1.4.0 until a release is tagged | [`typescript/`](typescript/) — `npm install @actenon/protocol-types` |
 | **Go SDK** | Separate repository; edge binding (protocol 13) requires sdk-go ≥ v1.1.0 | [`Actenon/sdk-go`](https://github.com/Actenon/sdk-go) — install instructions in its README |
 | **Rust SDK** | Separate repository; edge binding (protocol 13) requires `actenon-verifier-sdk` ≥ 0.2.0 | [`Actenon/sdk-rust`](https://github.com/Actenon/sdk-rust) — install instructions in its README |
 | **OpenAPI 3.1 components** | Stable | [`openapi/components.yaml`](openapi/components.yaml) — drop into any OpenAPI-aware toolchain |
@@ -177,7 +177,7 @@ See [`identifiers/prefixes.v1.yaml`](identifiers/prefixes.v1.yaml).
 **Honest status:** the wire protocol is fully cross-language — the
 conformance vectors are hash-locked JSON that any language can pass. The
 *packaging* of this repository is Python (PyPI) and TypeScript types (npm),
-both at v1.4.0. The Go and Rust verifier SDKs are versioned and released from
+both at v1.5.0 in this repository (PyPI and npm still serve 1.4.0; this change is not a release). The Go and Rust verifier SDKs are versioned and released from
 their own repositories; each SDK's README states its current release and
 install command. The TypeScript canonicaliser in `typescript-runtime/`
 (`@actenon/protocol`) is not yet published to npm and is used from source.
@@ -213,7 +213,7 @@ from actenon_protocol import (
     ResourceOwnedExecutionState,   # submitted | accepted | refused | ...
     canonicalize_bytes,            # ACTENON-JCS-STRICT-1 canonicalisation (UTF-8 bytes)
     CanonicalisationError,
-    RefusalCode,                   # the 20 canonical refusal codes
+    RefusalCode,                   # canonical refusal codes
 )
 from actenon_protocol.types import (  # Pydantic models: pip install "actenon-protocol[types]"
     ExecutionProof,
@@ -254,9 +254,9 @@ The protocol ships **129 hash-locked test vectors** across 6 categories:
 
 **129 vectors run on every PR** via the [CI workflow](.github/workflows/ci.yml), across Python 3.10 / 3.11 / 3.12, plus the TypeScript test suites (`typescript/` and `typescript-runtime/`).
 
-### External implementations — earn "Actenon-compatible v1.4.0"
+### External implementations — earn "Actenon-compatible v1.5.0"
 
-An external implementation is Actenon-compatible v1.4.0 if it accepts every valid vector and rejects every invalid vector. The [Runner Specification](conformance/RUNNER_SPEC.md) defines the interface, and the [standalone runner](conformance/runner.py) is a ready-to-use Python script that external implementations can subclass:
+An external implementation is Actenon-compatible v1.5.0 if it accepts every valid vector and rejects every invalid vector. The [Runner Specification](conformance/RUNNER_SPEC.md) defines the interface, and the [standalone runner](conformance/runner.py) is a ready-to-use Python script that external implementations can subclass:
 
 ```bash
 pip install -e ".[dev]"
@@ -279,14 +279,14 @@ Vectors are generated by [`conformance/generate_vectors.py`](conformance/generat
 2. **Canonicalisation is deterministic** — `ACTENON-JCS-STRICT-1` (RFC 8785 subset), sorted keys, no whitespace, floats rejected, duplicate keys rejected.
 3. **Refusal codes have two layers** — public-safe umbrella (`PROOF_INVALID`) + trusted detail (`AUDIENCE_MISMATCH`).
 4. **Results are discriminated** — brokered and resource-owned results have disjoint field sets.
-5. **Backward-compatible wire format** — v1.4.0 changes no field, schema or canonicalisation of v1.0.0–v1.3.0. It adds normative verifier obligations (edge binding E1–E5), so a verifier that ignored edge declarations is no longer conformant.
+5. **Backward-compatible wire format** — wire 1.2.0 adds optional `ExecutionProof.extensions` and two `internal_code` values. Existing 1.0.0 and 1.1.0 artefacts stay valid. v1.4.0 added the edge-binding obligations (E1–E5); v1.5.0 stops aliasing those refusals to `PARAMETER_MISMATCH`.
 6. **Hash-locked** — conformance vectors are versioned and frozen.
 7. **No ambient authority** — no field implies trust in an issuer, signer, or control plane. Trust is configured by the verifier.
 
 ## What's in this repo
 
 ```
-protocol/            # Human-readable specs (00–12)
+protocol/            # Human-readable specs (00–14)
   00-versioning.md
   01-identifiers.md
   02-canonicalisation.md

@@ -18,6 +18,7 @@ from actenon_protocol.types.common import (
     TargetRef,
 )
 from actenon_protocol.types.evidence import EvidenceLink
+from actenon_protocol.types.extensions import ProofExtensions
 from actenon_protocol.types.issuer import IssuerMetadata
 
 
@@ -48,3 +49,4 @@ class ExecutionProof(BaseModel):
     authority_decision_id: Identifier | None = None
     evidence_links: list[EvidenceLink] = Field(default_factory=list)
     custom_claims: dict | None = None
+    extensions: ProofExtensions | None = None

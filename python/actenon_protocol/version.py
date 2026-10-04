@@ -13,7 +13,12 @@ from __future__ import annotations
 # (BrokeredExecutionResult | ResourceOwnedExecutionResult) and the
 # per-mode state machines. Purely additive: no existing v1.0.0
 # artefact's wire format changed. See protocol/12-execution-results.md.
-PROTOCOL_VERSION = "1.1.0"
+#
+# 1.2.0: optional ExecutionProof.extensions (signed authority reference)
+# and two post-auth refusal codes, SCOPE_CAPABILITY_MISMATCH and
+# SCOPE_MODE_INVALID. Existing 1.0.0 and 1.1.0 artefacts stay valid.
+# See protocol/14-capability-provenance.md.
+PROTOCOL_VERSION = "1.2.0"
 
 # The canonical canonicalisation profile label.
 # This is the label that newly-minted proofs and receipts MUST use.

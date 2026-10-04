@@ -18,6 +18,14 @@ import {
 import { readFileSync } from "fs";
 import { join } from "path";
 import { ExecutionMode } from "../src/execution-modes.js";
+import {
+  CapabilityError,
+  authorityExtension,
+  capabilityInScope,
+  scopeCapabilitiesForMint,
+  scopeCapabilitiesForVerification,
+  unauthenticatedRefusal,
+} from "../src/capabilities.js";
 
 describe("identifiers", () => {
   test("accepts canonical prefixes", () => {
@@ -215,6 +223,54 @@ describe("refusal codes", () => {
       expect(refusalToRetryable(code)).toBe(true);
       expect(() => resolveAlias(code)).toThrow();
     }
+  });
+});
+
+describe("capability provenance", () => {
+  test("does not widen an empty or wildcard scope", () => {
+    expect(() => scopeCapabilitiesForMint([])).toThrow(CapabilityError);
+    expect(() => scopeCapabilitiesForMint(["*"])).toThrow(/wildcard/);
+    expect(scopeCapabilitiesForMint(["payment.refund"])).toEqual(["payment.refund"]);
+    expect(scopeCapabilitiesForVerification(null, "payment.refund")).toEqual(["payment.refund"]);
+    expect(scopeCapabilitiesForVerification([], "payment.refund")).toEqual([]);
+    expect(capabilityInScope("payment.refund", [])).toBe(false);
+    expect(capabilityInScope("*", ["*"])).toBe(false);
+  });
+
+  test("token length is not acceptance", () => {
+    const token = "A".repeat(32);
+    expect(token.length).toBeGreaterThanOrEqual(16);
+    expect(unauthenticatedRefusal({ trustRootConfigured: false, signatureVerified: false })).toBe(
+      "ISSUER_UNTRUSTED",
+    );
+    expect(unauthenticatedRefusal({ trustRootConfigured: true, signatureVerified: false })).toBe(
+      "SIGNATURE_INVALID",
+    );
+  });
+
+  test("authority extension names the grant", () => {
+    expect(
+      authorityExtension({
+        issuer: "service:actenon-permit",
+        grant_id: "grant_9f3c1a175e9b4d80a1b2c3d4e5f60718",
+      }),
+    ).toEqual({
+      authority: {
+        issuer: "service:actenon-permit",
+        grant_id: "grant_9f3c1a175e9b4d80a1b2c3d4e5f60718",
+        revocable: true,
+      },
+    });
+  });
+
+  test("capability mismatch resolves to itself", () => {
+    expect(resolveAlias("SCOPE_CAPABILITY_MISMATCH")).toBe("SCOPE_CAPABILITY_MISMATCH");
+    expect(refusalToInternalCode("SCOPE_CAPABILITY_MISMATCH", DisclosurePolicy.TRUSTED)).toBe(
+      "SCOPE_CAPABILITY_MISMATCH",
+    );
+    expect(refusalToDisclosedCode("SCOPE_CAPABILITY_MISMATCH", DisclosurePolicy.PUBLIC)).toBe(
+      "PROOF_INVALID",
+    );
   });
 });
 

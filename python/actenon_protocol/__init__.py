@@ -22,6 +22,17 @@ from actenon_protocol.canonicalisation import (
     canonicalize_bytes,
     canonicalize_json,
 )
+from actenon_protocol.capabilities import (
+    GLOB_CHARS,
+    CapabilityError,
+    authority_extension,
+    capability_in_scope,
+    is_concrete_capability,
+    parse_authority_extension,
+    scope_capabilities_for_mint,
+    scope_capabilities_for_verification,
+    unauthenticated_refusal,
+)
 from actenon_protocol.execution_modes import ExecutionMode
 from actenon_protocol.execution_results import (
     BROKERED_FINALITY,
@@ -98,6 +109,16 @@ __all__ = [
     "PUBLIC_SAFE_CODES",
     "DETAILED_CODES",
     "COMPATIBILITY_ALIASES",
+    # Capabilities
+    "GLOB_CHARS",
+    "CapabilityError",
+    "is_concrete_capability",
+    "scope_capabilities_for_mint",
+    "scope_capabilities_for_verification",
+    "capability_in_scope",
+    "authority_extension",
+    "parse_authority_extension",
+    "unauthenticated_refusal",
     # Outcomes
     "ExecutionOutcome",
     # Execution modes

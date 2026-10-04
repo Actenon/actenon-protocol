@@ -13,6 +13,17 @@ export { PROTOCOL_VERSION, CANONICALISATION_PROFILE, LEGACY_CANONICALISATION_PRO
 export { isValidIdentifier, generateIdentifier, normaliseIdentifier, PREFIXES, ALIASES } from "./identifiers.js";
 export { canonicalizeJson, canonicalizeBytes, CanonicalisationError } from "./canonicalisation.js";
 export { RefusalCode, DisclosurePolicy, resolveAlias, refusalToDisclosedCode, refusalToInternalCode, refusalToRetryable, PUBLIC_SAFE_CODES, DETAILED_CODES } from "./refusal-codes.js";
+export {
+  GLOB_CHARS,
+  CapabilityError,
+  isConcreteCapability,
+  scopeCapabilitiesForMint,
+  scopeCapabilitiesForVerification,
+  capabilityInScope,
+  authorityExtension,
+  unauthenticatedRefusal,
+} from "./capabilities.js";
+export type { AuthorityExtension } from "./capabilities.js";
 export { ExecutionOutcome } from "./outcome-codes.js";
 export { ExecutionMode } from "./execution-modes.js";
 
