@@ -1,34 +1,24 @@
-# Capability provenance — pin for dependents
+# Capability provenance — coordinated candidate
 
-Scan names a power. Permit signs it into a grant and a proof. The Kernel checks that proof before the side effect. Airlock writes the receipt. This package is the shared vocabulary for that path: exact capabilities, `extensions.authority`, and the refusal codes the edge actually emits.
+Scan names a power. Permit signs it into a grant and a proof. Kernel checks that proof at the execution edge. Airlock writes the receipt. Protocol supplies the shared exact-capability, authority-reference and refusal contract.
 
-Package **1.5.0**. Wire `PROTOCOL_VERSION` **1.2.0**. Not published to PyPI or npm. Pin the implementation commit below, or the head of [actenon-protocol#21](https://github.com/Actenon/actenon-protocol/pull/21) (a documentation descendant of that commit). After merge, pin the merge commit on `main`.
+Package **1.5.0**, wire **1.2.0**. The implementation was merged in [Protocol #21](https://github.com/Actenon/actenon-protocol/pull/21) at `eba78d3dbd41a0b6c86166ece0f34cc8d7b7a002`. Version 1.5.0 is a source candidate, not a published package. Source-based CI is evidence of integration; it does not establish registry-consumer readiness.
 
-```text
-actenon-protocol @ git+https://github.com/Actenon/actenon-protocol.git@9cc6ded0e0fc35ee98a8fc419b47d80a251581e3
-```
+## Contract
 
-Do not stay on PyPI `actenon-protocol` 1.4.0, or on Airlock's previous pin `e988c4d43f8b59d459628a306cd0117109e59d70`, for this contract. 1.4.0 maps `SCOPE_CAPABILITY_MISMATCH` and `SCOPE_MODE_INVALID` to `PARAMETER_MISMATCH`, so a trusted disclosure of an allow-list failure looks like a parameter mismatch. `ExecutionProof` there also has no `extensions` object.
+- `ExecutionProof.action.type` projects to PCCB `action.capability`. PCCB `action.name` is a signed operation label that may differ; it cannot substitute for the capability at a scope check.
+- `SCOPE_CAPABILITY_MISMATCH` and `SCOPE_MODE_INVALID` are canonical refusal codes. Trusted disclosure preserves them; public disclosure is `PROOF_INVALID`.
+- Minting an empty set or a capability containing `*`, `?`, `[` or `]` raises `CapabilityError`. No attempted-action or wildcard fallback is allowed.
+- `scope_capabilities_for_verification(None, capability)` constructs an explicit single-capability declaration. A supplied empty tuple remains empty and authorises nothing.
+- A signed `extensions.authority` reference identifies issuer, grant id and an explicit boolean `revocable`. A revocable proof requires an actual authoritative revocation check before execution; parsing the reference is insufficient.
+- No trust root means `ISSUER_UNTRUSTED`; an invalid signature means `SIGNATURE_INVALID`. Public disclosure collapses both to `PROOF_INVALID`. Token length is never a verification input.
 
-## What changed for callers
+Wire 1.0.0 and 1.1.0 remain accepted. Optional `extensions` preserves existing proof compatibility. Missing mandatory fields within a supplied authority reference fail closed.
 
-- `resolve_alias("SCOPE_CAPABILITY_MISMATCH")` and `resolve_alias("SCOPE_MODE_INVALID")` return those codes. They no longer return `PARAMETER_MISMATCH`.
-- Trusted `internal_code` for an edge allow-list failure is `SCOPE_CAPABILITY_MISMATCH`. Public `disclosed_code` is still `PROOF_INVALID`.
-- `scope_capabilities_for_mint(())` and any capability containing `*`, `?`, `[`, or `]` raise `CapabilityError`. An empty set is not replaced by the attempted action.
-- `scope_capabilities_for_verification(None, capability)` is exactly `(capability,)`. An empty tuple stays empty and authorises nothing.
-- `authority_extension(issuer=..., grant_id=...)` is the object Permit signs and `StoreRevocationChecker` reads.
-- `unauthenticated_refusal` is `ISSUER_UNTRUSTED` with no trust root and `SIGNATURE_INVALID` when the signature does not verify. Token length is not an input.
+## One coordinated lineage
 
-Artefacts stamped `1.0.0` and `1.1.0` remain valid. `extensions` is optional.
+[Kernel #44](https://github.com/Actenon/actenon-kernel/pull/44) consolidates the production/release candidate #41 with provenance candidate #43. It retains signed minter extensions, durable replay, exact edge binding and real revocation enforcement. Dependents must use that unified line rather than choose a Kernel according to whether they need `extensions`.
 
-## Dependent pins
+Permit, Go and Rust are being consolidated from their production and provenance candidates. Their approved source revisions and fixture locks belong in the final release graph, after their full suites pass. Scan #101 is merged at `ee971b43c78ed8b58f5f7fb59382ab20ce9b8a5c`. Airlock #3 is preserved for its subsequent update against the coordinated candidates.
 
-| Repo | What to pin with this protocol | Note |
-|---|---|---|
-| actenon-permit | `e368dca24af6f316590ce5fd1a0e83a9aebee924` ([#23](https://github.com/Actenon/actenon-permit/pull/23)) | Signs authority only, mints one concrete capability, `StoreRevocationChecker`. |
-| actenon-kernel | `fb3a38936f7dade4d25beb91402081eb16c31bfc` ([#43](https://github.com/Actenon/actenon-kernel/pull/43)) | Forged tokens refuse. `ActenonGate(..., capabilities=, revocation_checker=)`. |
-| actenon-kernel, when the proof must carry `extensions` | `533c029d63b5ce070a1eb8d8513e8e57a75ec703` | `PCCBMinter.mint` accepts `extensions`. Kernel #43's `mint` does not; Permit checks the signature and skips the extension on a kernel that cannot sign it. |
-| actenon-scan | `b7c5951e81acb5c5a84aa11947b76065f47bb452` ([#101](https://github.com/Actenon/actenon-scan/pull/101)) | Names tiktoken downloads, query-only URL hosts, and exports `normalise_path`. |
-| actenon-airlock | `d9b1ef11fed698d05fd53a27e674125941b69be6` ([#3](https://github.com/Actenon/actenon-airlock/pull/3)) | Replace Airlock's protocol pin with `9cc6ded0e0fc35ee98a8fc419b47d80a251581e3`. |
-
-`tests/test_protocol_drift.py` in Kernel and Permit asserts `PROTOCOL_VERSION == "1.1.0"`. Taking this commit means setting that expected wire version to `"1.2.0"`. The Kernel's local `_REFUSAL_CODE_MAP` still maps `SCOPE_CAPABILITY_MISMATCH` to `FailureCode.ACTION_MISMATCH` before the protocol alias lookup, so that map does not have to change for the gate to keep running. Callers of `resolve_alias` / `to_internal_code` do.
+Before registry publication, freeze one source revision per component, run complete integration and clean-artifact checks, and regenerate the dependency graph in release order. Temporary source overrides must be removed before publishing dependent packages. No source pin or individually green historical PR constitutes a released ecosystem.
