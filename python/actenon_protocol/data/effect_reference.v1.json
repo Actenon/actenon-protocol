@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:actenon:protocol:effect-reference:v1",
+  "title": "EffectReference",
+  "description": "Signed reservation reference. Not a reservation or authority by itself.",
+  "type": "object",
+  "required": [
+    "profile",
+    "effect_id",
+    "reservation_id",
+    "owner_attempt_id"
+  ],
+  "properties": {
+    "profile": {
+      "const": "ACTENON-EFFECT-1"
+    },
+    "effect_id": {
+      "type": "string",
+      "pattern": "^effect_[0-9a-f]{64}$"
+    },
+    "reservation_id": {
+      "type": "string",
+      "pattern": "^reservation_[0-9a-f]{32}$"
+    },
+    "owner_attempt_id": {
+      "type": "string",
+      "pattern": "^exec_[0-9a-f]{16,}$"
+    }
+  },
+  "additionalProperties": false
+}

@@ -51,7 +51,7 @@ jobs:
         # the JSON ships in the wheel, the YAML is the human-editable source.
         run: python scripts/compile_yaml_to_json.py --check
 
-      - name: Run conformance suite (129 vectors)
+      - name: Run conformance suite (156 vectors)
         run: python -m pytest conformance/python/ -v
 
   lint:
@@ -118,7 +118,7 @@ jobs:
         # The package used to ship only .ts source as main, which Node refuses
         # (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING).
         working-directory: typescript
-        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol-types canonicalizeJson canonicalizeBytes CanonicalisationError RefusalCode refusalToDisclosedCode resolveAlias PROTOCOL_VERSION isValidIdentifier ExecutionMode ExecutionOutcome
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol-types canonicalizeJson canonicalizeBytes CanonicalisationError RefusalCode refusalToDisclosedCode resolveAlias PROTOCOL_VERSION isValidIdentifier ExecutionMode ExecutionOutcome effectIdentity validateEffectEvidence EFFECT_PROFILE
 
   typescript-runtime:
     name: TypeScript runtime (@actenon/protocol)

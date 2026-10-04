@@ -33,6 +33,13 @@ from actenon_protocol.capabilities import (
     scope_capabilities_for_verification,
     unauthenticated_refusal,
 )
+from actenon_protocol.effects import (
+    EFFECT_PROFILE,
+    EffectError,
+    EffectOutcome,
+    effect_identity,
+    validate_effect_outcome,
+)
 from actenon_protocol.execution_modes import ExecutionMode
 from actenon_protocol.execution_results import (
     BROKERED_FINALITY,
@@ -119,6 +126,11 @@ __all__ = [
     "authority_extension",
     "parse_authority_extension",
     "unauthenticated_refusal",
+    "EFFECT_PROFILE",
+    "EffectError",
+    "EffectOutcome",
+    "effect_identity",
+    "validate_effect_outcome",
     # Outcomes
     "ExecutionOutcome",
     # Execution modes

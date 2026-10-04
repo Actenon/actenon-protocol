@@ -1,0 +1,14 @@
+{
+  "name": "not_executed_confirmed",
+  "operation": "evidence",
+  "artefact": {
+    "profile": "ACTENON-EFFECT-1",
+    "effect_id": "effect_bb109f2b4879be4b6162df4dfea7c294ad474a504776e745685c3a032fc6e5db",
+    "reservation_id": "reservation_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "owner_attempt_id": "exec_bbbbbbbbbbbbbbbb",
+    "outcome": "NOT_EXECUTED",
+    "execution_occurred": false,
+    "evidence_hash": "84d87d9bf6438ea34ecaea5939165c3541fb3bb503cc3c4f72141133b9b47f79"
+  },
+  "expected_validation": "valid"
+}

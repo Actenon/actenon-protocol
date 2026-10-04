@@ -1199,7 +1199,7 @@ class TestExecutionResults:
 
 class TestVersionConstants:
     def test_protocol_version(self):
-        assert PROTOCOL_VERSION == "1.2.0"
+        assert PROTOCOL_VERSION == "1.3.0"
 
     def test_dunder_version_is_the_package_version(self):
         """__version__ is the distribution version (what pip reports); the wire
@@ -1327,7 +1327,7 @@ class TestVectorHashLock:
         entries = _vector_lock_module().read_lock(self.LOCK)
         on_disk = {p.relative_to(VECTORS_DIR).as_posix() for p in VECTORS_DIR.rglob("*.json")}
         assert set(entries) == on_disk
-        assert len(entries) == 129
+        assert len(entries) == 156
 
     def test_tampered_vector_detected(self, tmp_path):
         vectors, lock = self._copy(tmp_path)
@@ -1373,8 +1373,8 @@ class TestStandaloneRunner:
         runner = _runner_module()
         results = runner.ConformanceRunner(runner.ReferenceValidator()).run_all()
         assert results.failures == []
-        assert results.total == 129  # was double-counted as 258
-        assert results.passed == 129
+        assert results.total == 156  # was double-counted as 258
+        assert results.passed == 156
         assert results.skipped == 0
 
     def test_float_accepting_canonicaliser_is_not_compatible(self):

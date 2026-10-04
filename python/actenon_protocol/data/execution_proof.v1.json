@@ -124,6 +124,10 @@
             }
           },
           "additionalProperties": true
+        },
+        "effect": {
+          "$ref": "urn:actenon:protocol:effect-reference:v1",
+          "description": "ACTENON-EFFECT-1 reservation owner reference. Enforced only by an explicitly configured effect-protected edge, not by a legacy verifier."
         }
       }
     }

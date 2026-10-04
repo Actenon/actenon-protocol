@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from .effects import EffectReference
 
 
 class AuthorityExtension(BaseModel):
@@ -25,3 +27,11 @@ class ProofExtensions(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     authority: AuthorityExtension | None = None
+    effect: EffectReference | None = None
+
+    @field_validator("effect", mode="before")
+    @classmethod
+    def present_effect_is_not_null(cls, value):
+        if value is None:
+            raise ValueError("a present effect reference must be an object")
+        return value

@@ -18,6 +18,7 @@ from actenon_protocol.types.common import (
     Signature,
     TargetRef,
 )
+from actenon_protocol.types.effects import EffectEvidence, EffectReference
 from actenon_protocol.types.evidence import EvidenceLink
 from actenon_protocol.types.extensions import AuthorityExtension, ProofExtensions
 from actenon_protocol.types.intent import AuthorisedExecutionIntent
@@ -38,6 +39,8 @@ __all__ = [
     "EvidenceLinkType",
     "AuthorityExtension",
     "ProofExtensions",
+    "EffectReference",
+    "EffectEvidence",
     "ExecutionProof",
     "ExecutionReceipt",
     "ExecutionRefusal",

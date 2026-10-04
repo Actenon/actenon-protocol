@@ -18,7 +18,10 @@ from __future__ import annotations
 # and two post-auth refusal codes, SCOPE_CAPABILITY_MISMATCH and
 # SCOPE_MODE_INVALID. Existing 1.0.0 and 1.1.0 artefacts stay valid.
 # See protocol/14-capability-provenance.md.
-PROTOCOL_VERSION = "1.2.0"
+# 1.3.0: optional signed effect reservation reference and portable
+# ACTENON-EFFECT-1 consequence evidence; existing receipts/results unchanged.
+# See protocol/15-consequential-effects.md.
+PROTOCOL_VERSION = "1.3.0"
 
 # The canonical canonicalisation profile label.
 # This is the label that newly-minted proofs and receipts MUST use.

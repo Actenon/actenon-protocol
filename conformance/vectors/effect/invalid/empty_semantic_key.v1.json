@@ -1,0 +1,16 @@
+{
+  "name": "empty_semantic_key",
+  "operation": "identity",
+  "input": {
+    "profile": "ACTENON-EFFECT-1",
+    "namespace": "merchant:acme:production",
+    "kind": "semantic",
+    "action_type": "payment.refund",
+    "target": {
+      "type": "payment-provider",
+      "id": "stripe/acme"
+    },
+    "semantic_key": {}
+  },
+  "expected_validation": "invalid"
+}

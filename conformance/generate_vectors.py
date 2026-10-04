@@ -2,7 +2,7 @@
 """Generate comprehensive conformance vectors for the Actenon protocol.
 
 This script generates the full set of test vectors that an external
-implementation must pass to claim "Actenon-compatible v1.5.0".
+implementation must pass to claim "Actenon-compatible v1.6.0".
 
 Vectors are written as individual JSON files under conformance/vectors/
 so they can be consumed by any language's test runner.
@@ -417,7 +417,7 @@ def generate_receipt_vectors():
 # Refusal vectors — the original 20 catalogue codes.
 # SCOPE_CAPABILITY_MISMATCH and SCOPE_MODE_INVALID (catalogue entries 21–22)
 # are covered by conformance/python/test_capability_provenance.py. Do not
-# regenerate this file to add them: the 129 vectors are hash-locked.
+# regenerate this file to add them: the 156 vectors are hash-locked.
 # ---------------------------------------------------------------------------
 
 def generate_refusal_vectors():
