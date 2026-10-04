@@ -10,7 +10,7 @@ A capability is one exact string.
 
 - Scan-named powers are capabilities: an action kind such as `http.get`, `filesystem.write`, `process.exec`, or `email.send`, or a compiled id (`airlock.` plus a digest of action, resource, and transport).
 - On `ExecutionProof`, the capability is `action.type`.
-- On the Kernel PCCB, the same string is `action.capability`. When both `action.name` and `action.capability` are present they MUST be equal to that string for the action the proof authorises.
+- On the Kernel PCCB, the same string is `action.capability`. `action.name` is an operation label and MAY differ from the capability. It is part of the signed action and exact intent comparison, but MUST NOT replace `action.capability` in a scope check. This preserves existing conformance vectors whose operation name differs from their authority capability.
 - Grant allow-lists may contain patterns (`payment.*`). A proof MUST NOT. The characters `*`, `?`, `[`, and `]` are grant-scope syntax. They are not capabilities, and a verifier MUST NOT expand them.
 - An unresolved call (`airlock.unresolved.<digest>`) is a concrete capability. It is denied because it is outside the grant, not because the string is malformed.
 
