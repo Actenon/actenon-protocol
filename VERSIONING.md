@@ -2,7 +2,7 @@
 
 ## Current version
 
-**Protocol version:** `1.1.0`
+**Protocol version:** `1.2.0`
 **Canonicalisation profile:** `ACTENON-JCS-STRICT-1` (profile version `1`)
 **Refusal taxonomy version:** `1`
 **Identifier registry version:** `1`

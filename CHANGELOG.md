@@ -12,6 +12,23 @@ git tags, and PyPI carry). The **wire protocol** version is declared separately 
 (`PROTOCOL_VERSION`) and only changes when wire semantics change. The two may
 legitimately diverge; see VERSIONING.md § "Protocol version vs package version".
 
+## [1.5.0]
+
+### Security
+
+* **`SCOPE_CAPABILITY_MISMATCH` and `SCOPE_MODE_INVALID` are canonical refusal codes.** Package 1.4.0 required verifiers to emit them ([`protocol/13-edge-binding.md`](protocol/13-edge-binding.md)) while the catalogue aliased both to `PARAMETER_MISMATCH`. Trusted disclosure of an edge allow-list failure therefore looked like a parameter mismatch. Public disclosure is still `PROOF_INVALID`. The action hash may match and the refusal is still the capability check.
+* **A proof token is not accepted on length or shape.** A verifier that reported any string of 16 or more characters, a `v1.` prefix, or well-formed JSON as a valid proof is non-conformant. No trust root is `ISSUER_UNTRUSTED`. A forged signature is `SIGNATURE_INVALID`. `unauthenticated_refusal` has no token-length argument.
+* **Issuers MUST NOT widen an empty capability set.** `scope_capabilities_for_mint` refuses an empty sequence and any capability containing `*`, `?`, `[`, or `]`. The attempted action and `*` are not substitutes. Verification of an omitted allow-list is exactly the intent's own capability; an empty tuple authorises nothing.
+
+### Added
+
+* **Wire `1.2.0`.** Optional `ExecutionProof.extensions`, with `extensions.authority` `{issuer, grant_id, revocable}`. This is the signed grant reference Permit embeds and Airlock's revocation checker reads. Existing 1.0.0 and 1.1.0 artefacts stay valid.
+* [`protocol/14-capability-provenance.md`](protocol/14-capability-provenance.md) and [`docs/CAPABILITY_PROVENANCE.md`](docs/CAPABILITY_PROVENANCE.md). The second file is the pin dependents should use. Nothing here is published to PyPI or npm.
+
+### Versioning
+
+* Package MINOR `1.4.0` → `1.5.0`. Wire MINOR `1.1.0` → `1.2.0` (optional field, new `internal_code` values). Kernel and Permit drift tests that assert `PROTOCOL_VERSION == "1.1.0"` update that expectation when they take this pin.
+
 ## [1.4.0]
 
 ### Added

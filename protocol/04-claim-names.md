@@ -24,6 +24,7 @@ This specification defines the canonical claim names that appear in an `Executio
 | `authority_decision_id` | identifier \| null | no | The authority broker's decision record identifier, if applicable. |
 | `evidence_links` | array | no | Evidence links (transparency log entries, etc.). |
 | `custom_claims` | object | no | Implementation-specific custom claims. Consumers MUST ignore unknown claims. Custom claims MUST NOT override protocol-defined fields. |
+| `extensions` | object | no | Signed extensions, added in wire 1.2.0. `extensions.authority` is `{issuer, grant_id, revocable}`. Consumers MUST ignore unknown members. |
 
 ## Naming conventions
 
@@ -68,5 +69,7 @@ The actenon-kernel's `PCCB` model (in `actenon/models/contracts.py`) uses claim 
 | (none) | `authority_decision_id` | **New in v1.0.** For audit. |
 | (none) | `evidence_links` | **New in v1.0.** |
 | (none) | `custom_claims` | **New in v1.0.** |
+| `extensions` | `extensions` | **Wire 1.2.0 on ExecutionProof.** Already present on the Kernel PCCB. `extensions.authority` is the revocable grant reference. |
+| `action.capability` | `action.type` | Same string. When the Kernel also carries `action.name`, it MUST equal this capability for the authorised action. Globs are not capabilities. |
 
 The Kernel's existing PCCB serialisation is NOT wire-compatible with the protocol's `ExecutionProof` — the protocol adds `execution_mode`, `grant_id`, `authority_decision_id`, `evidence_links`, `custom_claims`, and renames `canonicalization` → `canonicalisation`. The Kernel will be updated in a future minor version to emit protocol-compatible proofs. Until then, the protocol and the Kernel coexist via a translation layer (out of scope for this repo).

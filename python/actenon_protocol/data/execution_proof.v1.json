@@ -95,8 +95,37 @@
     },
     "custom_claims": {
       "type": "object",
-      "description": "Optional. Implementation-specific custom claims. Consumers MUST ignore unknown claims. Custom claims MUST NOT override protocol-defined fields.",
+      "description": "Optional. Implementation-specific custom claims. Consumers MUST ignore unknown claims. Custom claims MUST NOT override protocol-defined fields. The revocable grant reference belongs in extensions.authority, not here.",
       "additionalProperties": true
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Optional. Signed extension object. Members are covered by the proof signature. Consumers MUST preserve unknown members and MUST ignore members they do not understand. extensions.authority is the revocable grant reference (protocol/14-capability-provenance.md, protocol/13-edge-binding.md E5).",
+      "additionalProperties": true,
+      "properties": {
+        "authority": {
+          "type": "object",
+          "description": "The grant under which this proof was minted. When revocable is true, an edge with that issuer's revocation source MUST consult it before any side effect.",
+          "required": ["issuer", "grant_id", "revocable"],
+          "properties": {
+            "issuer": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Issuer identity, e.g. 'service:actenon-permit'."
+            },
+            "grant_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The authority broker's grant identifier. Permit uses the grant_ prefix."
+            },
+            "revocable": {
+              "type": "boolean",
+              "description": "True when the edge must be able to refuse a still-unexpired proof because the grant was revoked."
+            }
+          },
+          "additionalProperties": true
+        }
+      }
     }
   },
   "additionalProperties": false

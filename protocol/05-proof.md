@@ -37,10 +37,13 @@ The proof is NOT the developer-facing `AuthorisedExecutionIntent`. The intent is
 | `authority_decision_id` | identifier \| null | The authority broker's decision record identifier. For audit. |
 | `evidence_links` | array | Evidence links. See `protocol/10-evidence-linkage.md`. |
 | `custom_claims` | object | Implementation-specific custom claims. Consumers MUST ignore unknown claims. |
+| `extensions` | object | Optional signed extensions. `extensions.authority` is the revocable grant reference. See `protocol/14-capability-provenance.md`. |
 
 ## Verification algorithm
 
 A verifier receiving an `ExecutionProof` MUST perform the following steps in order. Each step's failure produces a specific refusal code.
+
+Parsing is not acceptance. A verifier MUST NOT report a token valid because of its length, a `v1.` prefix, or well-formed JSON. With no trust root the refusal is `ISSUER_UNTRUSTED` (trusted) / `PROOF_INVALID` (public). A forged signature is `SIGNATURE_INVALID` / `PROOF_INVALID`. See [14-capability-provenance.md](14-capability-provenance.md).
 
 1. **Parse.** If the artefact is not valid JSON or does not conform to the schema → `MALFORMED_REQUEST`.
 2. **Check protocol version.** If the major version is not supported → `UNSUPPORTED_PROTOCOL_VERSION`.
@@ -69,7 +72,7 @@ An issuer (authority broker) minting an `ExecutionProof` MUST:
 
 1. Receive an `AuthorisedExecutionIntent` from the developer (or construct one from the broker's own state).
 2. Run the broker's policy engine to decide whether to issue. (Out of scope for the protocol — owned by the authority broker.)
-3. Construct the proof payload: `protocol_version`, `proof_id` (freshly generated), `issuer`, `subject`, `audience`, `action`, `target`, `issued_at`, `expires_at`, `canonicalisation` (set to `ACTENON-JCS-STRICT-1`), `execution_mode`, optional `grant_id`, `authority_decision_id`, `evidence_links`, `custom_claims`.
+3. Construct the proof payload: `protocol_version`, `proof_id` (freshly generated), `issuer`, `subject`, `audience`, `action`, `target`, `issued_at`, `expires_at`, `canonicalisation` (set to `ACTENON-JCS-STRICT-1`), `execution_mode`, optional `grant_id`, `authority_decision_id`, `evidence_links`, `custom_claims`, and, when the grant is revocable, `extensions.authority`. `action.type` MUST be one concrete capability. An empty allow-list MUST NOT be replaced by the attempted action or by `*`. See [14-capability-provenance.md](14-capability-provenance.md).
 4. Canonicalise the `(action, target, parameters)` tuple under `ACTENON-JCS-STRICT-1`.
 5. Compute `action_hash = sha256(canonical_bytes)`.
 6. Construct the signing payload (canonicalised proof payload minus the `signature` field).

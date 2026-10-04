@@ -27,6 +27,7 @@ If the markdown and the machine-readable sources disagree, the machine-readable 
 | 11 | [11-disclosure-policy.md](11-disclosure-policy.md) | Secure disclosure policy |
 | 12 | [12-execution-results.md](12-execution-results.md) | Execution results and per-mode state machines |
 | 13 | [13-edge-binding.md](13-edge-binding.md) | Edge binding: what the protected edge declares (E1–E5) |
+| 14 | [14-capability-provenance.md](14-capability-provenance.md) | Exact capabilities, authority extensions, forged tokens |
 
 ## Normative references
 

@@ -1,7 +1,7 @@
 """Refusal-code catalogue and disclosure-policy implementation.
 
 Loads the canonical catalogue and provides:
-  - RefusalCode enum (the 20 canonical codes)
+  - RefusalCode enum (the canonical codes)
   - DisclosurePolicy enum (public, trusted, local_debug)
   - alias resolution (compatibility with actenon-kernel FailureCode)
   - disclosed/internal code selection per policy
@@ -107,7 +107,7 @@ _CATALOGUE: Final[dict] = _load_catalogue()
 
 
 class RefusalCode(StrEnum):
-    """The 20 canonical refusal codes defined in the protocol."""
+    """The canonical refusal codes defined in the protocol."""
 
     # request_shape
     MALFORMED_REQUEST = "MALFORMED_REQUEST"
@@ -127,6 +127,8 @@ class RefusalCode(StrEnum):
     TARGET_MISMATCH = "TARGET_MISMATCH"
     ACTION_MISMATCH = "ACTION_MISMATCH"
     PARAMETER_MISMATCH = "PARAMETER_MISMATCH"
+    SCOPE_CAPABILITY_MISMATCH = "SCOPE_CAPABILITY_MISMATCH"
+    SCOPE_MODE_INVALID = "SCOPE_MODE_INVALID"
     REPLAY_DETECTED = "REPLAY_DETECTED"
 
     # authority_state

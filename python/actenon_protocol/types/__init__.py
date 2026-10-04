@@ -19,6 +19,7 @@ from actenon_protocol.types.common import (
     TargetRef,
 )
 from actenon_protocol.types.evidence import EvidenceLink
+from actenon_protocol.types.extensions import AuthorityExtension, ProofExtensions
 from actenon_protocol.types.intent import AuthorisedExecutionIntent
 from actenon_protocol.types.issuer import IssuerMetadata
 from actenon_protocol.types.proof import ExecutionProof
@@ -35,6 +36,8 @@ __all__ = [
     "ActionHash",
     "Signature",
     "EvidenceLinkType",
+    "AuthorityExtension",
+    "ProofExtensions",
     "ExecutionProof",
     "ExecutionReceipt",
     "ExecutionRefusal",

@@ -104,6 +104,14 @@ export interface ExecutionProof {
   authority_decision_id?: Identifier | null;
   evidence_links?: EvidenceLink[];
   custom_claims?: Record<string, unknown>;
+  /** Signed extension object. `authority` is the revocable grant reference. */
+  extensions?: {
+    authority?: {
+      issuer: string;
+      grant_id: string;
+      revocable: boolean;
+    };
+  };
 }
 
 export interface ExecutionReceipt {

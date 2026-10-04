@@ -524,7 +524,7 @@ class TestIdentifiers:
 
 class TestRefusalCatalogue:
     def test_twenty_canonical_codes(self):
-        assert len(list(RefusalCode)) == 20
+        assert len(list(RefusalCode)) == 22
 
     def test_all_codes_have_catalogue_entry(self):
         """Every canonical code has an entry in the catalogue YAML."""
@@ -621,7 +621,8 @@ class TestRefusalCatalogue:
         assert resolve_alias("AUDIENCE_MISMATCH") == "AUDIENCE_MISMATCH"
         assert resolve_alias("INTENT_MISMATCH") == "PARAMETER_MISMATCH"
         assert resolve_alias("ACTION_HASH_MISMATCH") == "PARAMETER_MISMATCH"
-        assert resolve_alias("SCOPE_CAPABILITY_MISMATCH") == "PARAMETER_MISMATCH"
+        assert resolve_alias("SCOPE_CAPABILITY_MISMATCH") == "SCOPE_CAPABILITY_MISMATCH"
+        assert resolve_alias("SCOPE_MODE_INVALID") == "SCOPE_MODE_INVALID"
         assert resolve_alias("TENANT_MISMATCH") == "TARGET_MISMATCH"
         assert resolve_alias("SUBJECT_MISMATCH") == "TARGET_MISMATCH"
         assert resolve_alias("PROOF_PAYLOAD_INVALID") == "MALFORMED_REQUEST"
@@ -1198,7 +1199,7 @@ class TestExecutionResults:
 
 class TestVersionConstants:
     def test_protocol_version(self):
-        assert PROTOCOL_VERSION == "1.1.0"
+        assert PROTOCOL_VERSION == "1.2.0"
 
     def test_dunder_version_is_the_package_version(self):
         """__version__ is the distribution version (what pip reports); the wire

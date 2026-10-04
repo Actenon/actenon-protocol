@@ -184,7 +184,37 @@ codes:
       action being attempted. The `action_hash` recomputed by the verifier
       does not match the `action_hash` in the proof.
     disclosure_note: "Detailed code; trusted disclosure only."
-    compatibility_aliases: ["ACTION_HASH_MISMATCH", "INTENT_MISMATCH", "SCOPE_CAPABILITY_MISMATCH"]
+    compatibility_aliases: ["ACTION_HASH_MISMATCH", "INTENT_MISMATCH"]
+
+  - code: "SCOPE_CAPABILITY_MISMATCH"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "SCOPE_CAPABILITY_MISMATCH"
+    retryable: false
+    description: |
+      The intent's capability is not an element of the edge's declared
+      scope_capabilities, or that declaration is empty. Comparison is exact
+      string equality. A glob (`*`, `?`, `[`, `]`) is not a capability, and
+      an empty declaration is not widened to the attempted action or to `*`.
+      This is not a parameter mismatch: the action hash may still match.
+    disclosure_note: |
+      Post-authentication. Public callers see `PROOF_INVALID`. Trusted
+      callers see `SCOPE_CAPABILITY_MISMATCH`. Do not collapse this to
+      `PARAMETER_MISMATCH`.
+
+  - code: "SCOPE_MODE_INVALID"
+    category: "proof_validity"
+    disclosed_code: "PROOF_INVALID"
+    internal_code: "SCOPE_MODE_INVALID"
+    retryable: false
+    description: |
+      The proof's signed scope mode is not single-use (`scope.single_use`
+      is not true, or the mode is not `exact`). Protocol v1 proofs are
+      single-use only. A verifier MUST NOT treat the proof as reusable.
+    disclosure_note: |
+      Post-authentication. Public callers see `PROOF_INVALID`. Trusted
+      callers see `SCOPE_MODE_INVALID`. Do not collapse this to
+      `PARAMETER_MISMATCH`.
 
   - code: "REPLAY_DETECTED"
     category: "proof_validity"
@@ -298,8 +328,6 @@ compatibility_aliases:
   "ACTION_HASH_MISMATCH": "PARAMETER_MISMATCH"
   "ACTION_HASH_ALGORITHM_INVALID": "PARAMETER_MISMATCH"
   "ACTION_HASH_INVALID": "PARAMETER_MISMATCH"
-  "SCOPE_MODE_INVALID": "PARAMETER_MISMATCH"
-  "SCOPE_CAPABILITY_MISMATCH": "PARAMETER_MISMATCH"
   "TENANT_MISMATCH": "TARGET_MISMATCH"
   "SUBJECT_MISMATCH": "TARGET_MISMATCH"
   "PROOF_PAYLOAD_INVALID": "MALFORMED_REQUEST"

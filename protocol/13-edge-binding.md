@@ -2,10 +2,12 @@
 
 Status: **Normative** from actenon-protocol 1.4.0 (package version). Decision record: 2026-10-02.
 
-Versioning: these rules change what a verifier accepts, not the wire format. `scope_capabilities`, `parameter_constraints`
-and `resource_selectors` already existed as verifier context, and `extensions.authority` is a member of the existing open
-`extensions` object. The wire `PROTOCOL_VERSION` stays `1.1.0`. Under VERSIONING.md § Security-patch handling this is a
-MINOR package bump.
+Versioning: these rules change what a verifier accepts. `scope_capabilities`, `parameter_constraints`
+and `resource_selectors` already existed as verifier context. The Kernel PCCB already had an open
+`extensions` object; `ExecutionProof` gained optional `extensions` in wire `1.2.0` (package 1.5.0)
+so `extensions.authority` has a protocol field. Under VERSIONING.md § Security-patch handling the
+1.4.0 rules were a MINOR package bump. The 1.5.0 catalogue fix (the two edge codes are canonical,
+not aliases of `PARAMETER_MISMATCH`) is a wire MINOR because `internal_code` may now carry them.
 
 ## Why this exists
 
@@ -32,7 +34,9 @@ signature verifies (post-authentication), so their refusal codes may be disclose
   `scope.capabilities`.
 - An empty declaration is refused, also with `SCOPE_CAPABILITY_MISMATCH`.
 - Comparison is exact string equality. Patterns (`payments.*`) are **not** expanded: a broker may authorise with patterns,
-  but the proof and the edge speak in exact capabilities.
+  but the proof and the edge speak in exact capabilities. See [14-capability-provenance.md](14-capability-provenance.md).
+- `SCOPE_CAPABILITY_MISMATCH` is a canonical refusal code. It MUST NOT be rewritten to `PARAMETER_MISMATCH`.
+  Package 1.4.0 named the code and the catalogue still aliased it; package 1.5.0 (wire 1.2.0) stops that alias.
 
 ### E2 — `parameter_constraints` (optional, subset of what was signed)
 - An empty object imposes nothing.

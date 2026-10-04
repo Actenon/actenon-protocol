@@ -38,7 +38,7 @@ The suite tests:
 1. **Canonicalisation** — every valid vector produces the exact expected bytes; every invalid vector raises `CanonicalisationError`.
 2. **Schema validation** — every artefact vector is validated against its JSON Schema.
 3. **Identifier validation** — canonical prefixes, aliases, forbidden prefixes, hex length, case.
-4. **Refusal catalogue** — 20 canonical codes, alias resolution, disclosure policy, retryability.
+4. **Refusal catalogue** — canonical codes, alias resolution, disclosure policy, retryability.
 5. **Execution modes** — both modes defined, mode explicit on every artefact, mode-mismatch produces `AUDIENCE_MISMATCH`.
 6. **Version constants** — protocol version, canonicalisation profile, alias acceptance.
 7. **Pydantic types** — every artefact type round-trips through JSON.
