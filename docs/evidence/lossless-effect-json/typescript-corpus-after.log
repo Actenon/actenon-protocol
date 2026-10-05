@@ -1,0 +1,7 @@
+  SKIP  unsupported_type_bytes (no JavaScript representation for native type)
+  SKIP  non_string_key (no JavaScript representation for native type)
+  SKIP  unsupported_type_set (no JavaScript representation for native type)
+
+============================================================
+Canonicalisation conformance (TypeScript): 40 passed, 0 failed, 3 skipped
+============================================================

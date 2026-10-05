@@ -1,0 +1,12 @@
+  SKIP  unsupported_type_bytes (no input_json — In Python, the test constructs b'hello' directly.)
+  SKIP  non_string_key (no input_json — In Python, the test constructs {1: 'a'} directly. JSON objects always have string keys.)
+  SKIP  unsupported_type_set (no input_json — In Python, the test constructs {1, 2, 3} (a set) directly.)
+
+============================================================
+Canonicalisation conformance (@actenon/protocol): 76 passed, 0 failed, 3 skipped
+
+Skipped vectors (3):
+  [LEGITIMATE] unsupported_type_bytes — no input_json — language-specific
+  [LEGITIMATE] non_string_key — no input_json — language-specific
+  [LEGITIMATE] unsupported_type_set — no input_json — language-specific
+============================================================

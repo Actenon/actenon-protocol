@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/ross/Documents/Codex/2026-10-03/referenced-chatgpt-conversation-this-is-an/work/actenon-protocol-effects
+configfile: pyproject.toml
+collected 368 items
+
+conformance/python/conformance_suite.py .......................sssssssss [  8%]
+ssssssss.s..........ss.ss............................................... [ 28%]
+........................................................................ [ 47%]
+........................................................................ [ 67%]
+.........................................................                [ 82%]
+conformance/python/test_capability_provenance.py .......                 [ 84%]
+conformance/python/test_effects.py ..................................... [ 94%]
+......                                                                   [ 96%]
+conformance/python/test_package_schemas.py .............                 [100%]
+
+- generated xml file: /Users/ross/Documents/Codex/2026-10-03/referenced-chatgpt-conversation-this-is-an/work/actenon-protocol-effects/docs/evidence/lossless-effect-json/python-after.xml -
+======================= 346 passed, 22 skipped in 3.19s ========================

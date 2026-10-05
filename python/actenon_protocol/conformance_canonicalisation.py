@@ -26,6 +26,7 @@ from pathlib import Path
 from actenon_protocol.canonicalisation import (
     CanonicalisationError,
     canonicalize_json,
+    parse_strict,
 )
 
 
@@ -103,19 +104,8 @@ def run_conformance(verbose: bool = False, vectors_dir: Path | None = None) -> i
             input_json = vector.get("input_json")
 
             if input_json is not None:
-                # Parse the JSON string, then try to canonicalise.
-                # For floats, we need to parse with float support.
                 try:
-                    parsed = json.loads(input_json)
-                except json.JSONDecodeError:
-                    # NaN/Infinity are not valid JSON — skip if we can't parse
-                    if verbose:
-                        print(f"  SKIP  {name} (not parseable as JSON)")
-                    skipped += 1
-                    continue
-
-                try:
-                    canonicalize_json(parsed)
+                    canonicalize_json(parse_strict(input_json))
                     print(f"  FAIL  {name}: expected CanonicalisationError but got success")
                     failed += 1
                 except (CanonicalisationError, TypeError):

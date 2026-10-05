@@ -132,14 +132,14 @@ For implementations in other languages (Go, Rust, TypeScript, etc.):
 
 | Category | Valid | Invalid | Total | What it tests |
 |---|---:|---:|---:|---|
-| `canonicalisation` | 22 | 15 | 37 | ACTENON-JCS-STRICT-1 canonicalisation (float rejection, duplicate keys, Unicode, depth/size limits) |
+| `canonicalisation` | 22 | 17 | 39 | ACTENON-JCS-STRICT-1 canonicalisation (float rejection, duplicate keys, Unicode, depth/size limits) |
 | `proof` | 15 | 14 | 29 | ExecutionProof schema, identifier prefixes, protocol version, canonicalisation profile, required fields |
 | `receipt` | 12 | 8 | 20 | ExecutionReceipt schema, outcome enum, required fields, both execution modes |
 | `refusal` | 20 | 5 | 25 | All 20 refusal codes from the catalogue, two-layer disclosure, retryability, code-to-umbrella mapping |
 | `execution-mode` | 10 | 0 | 10 | Mode distinction (brokered vs resource_owned), mode-specific field constraints, finality |
 | `execution-result` | 4 | 4 | 8 | Discriminated union: disjoint field sets for brokered vs resource-owned results |
-| `effect` | 13 | 14 | 27 | Descriptor hashing, reservation references, consequence certainty |
-| **Total** | **96** | **60** | **156** | |
+| `effect` | 16 | 14 | 30 | Descriptor hashing, reservation references, consequence certainty |
+| **Total** | **99** | **62** | **161** | |
 
 ## Regenerating vectors
 

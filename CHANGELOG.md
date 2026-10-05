@@ -21,6 +21,16 @@ legitimately diverge; see VERSIONING.md § "Protocol version vs package version"
 * Consequence evidence distinguishes COMMITTED, NOT_EXECUTED and AMBIGUOUS without renaming stable receipt/result enums. Timeout after dispatch is not non-execution; ambiguity holds the reservation and budget pending trusted reconciliation.
 * 27 locked vectors, exercised by the standalone runner, JSON Schemas, Python models and TypeScript helpers. Existing 129 vectors remain byte-identical.
 
+### Fixed
+
+* Strict wire parsing retains arbitrary-precision integers in both TypeScript
+  packages and Python. TypeScript now exposes `parseStrict` alongside effect
+  helpers; safe integers remain `number`, larger values become `bigint`.
+* Canonicalisation runners no longer skip valid large integers or lexical
+  floats. Five new frozen vectors cover adjacent large effect amounts, a negative
+  arbitrary-precision amount, rounded fractional input and escaped duplicate
+  members. All original 156 vector files remain byte-identical.
+
 ### Scope
 
 * This is the portable contract and reference implementation, not completed runtime/ledger integration. PostgreSQL coordination, executor ownership, resource verification, reconciliation and full SDK differential testing must pass before effect-protected execution is claimed. No package or tag is published by this change.

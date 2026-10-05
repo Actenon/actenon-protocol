@@ -23,7 +23,7 @@ every PR, push to `main`, and once a day if any factual claim this README
 makes about the package stops being true:
 
 - **Zero runtime dependencies** — read from `pyproject.toml`, not prose.
-- **The vector count** — "156 hash-locked test vectors" is compared against
+- **The vector count** — "161 hash-locked test vectors" is compared against
   the actual files in [`conformance/vectors/`](conformance/vectors/).
 - **The hash lock** — every vector's SHA-256 is pinned in
   [`conformance/vectors.sha256`](conformance/vectors.sha256)
@@ -237,23 +237,23 @@ canonical_bytes = canonicalize_bytes({
 
 > **Looking for the canonical conformance map?** See
 > [`CONFORMANCE.md`](CONFORMANCE.md) for the single page that maps the
-> Protocol's 156 vectors and the Kernel's verifier suite onto "what you must
+> Protocol's 161 vectors and the Kernel's verifier suite onto "what you must
 > pass to claim what."
 
-The protocol ships **156 hash-locked test vectors** across 7 categories:
+The protocol ships **161 hash-locked test vectors** across 7 categories:
 
 | Category | Valid | Invalid | Total | What it tests |
 |---|---:|---:|---:|---|
-| `canonicalisation` | 22 | 15 | 37 | ACTENON-JCS-STRICT-1 (float rejection, duplicate keys, Unicode, depth/size limits) |
+| `canonicalisation` | 22 | 17 | 39 | ACTENON-JCS-STRICT-1 (float rejection, duplicate keys, Unicode, depth/size limits) |
 | `proof` | 15 | 14 | 29 | ExecutionProof schema, identifier prefixes, protocol version, required fields |
 | `receipt` | 12 | 8 | 20 | ExecutionReceipt schema, outcome enum, both execution modes, required fields |
 | `refusal` | 20 | 5 | 25 | All 20 refusal codes from the catalogue, two-layer disclosure, retryability |
 | `execution-mode` | 10 | 0 | 10 | Mode distinction (brokered vs resource_owned), mode-specific constraints |
 | `execution-result` | 4 | 4 | 8 | Discriminated union: disjoint field sets |
-| `effect` | 13 | 14 | 27 | Effect identity, reservation reference, consequence certainty |
-| **Total** | **96** | **60** | **156** | |
+| `effect` | 16 | 14 | 30 | Effect identity, reservation reference, consequence certainty |
+| **Total** | **99** | **62** | **161** | |
 
-**156 vectors run on every PR** via the [CI workflow](.github/workflows/ci.yml), across Python 3.10 / 3.11 / 3.12, plus the TypeScript test suites (`typescript/` and `typescript-runtime/`).
+**161 vectors run on every PR** via the [CI workflow](.github/workflows/ci.yml), across Python 3.10 / 3.11 / 3.12, plus the TypeScript test suites (`typescript/` and `typescript-runtime/`).
 
 ### External implementations — earn "Actenon-compatible v1.6.0"
 

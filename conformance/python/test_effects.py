@@ -108,15 +108,15 @@ def test_standalone_runner_actually_calls_effect_implementation():
 
     sys.modules[spec.name] = runner
     spec.loader.exec_module(runner)
-    assert len(runner.load_vectors("effect")) == len(VECTORS) == 27
+    assert len(runner.load_vectors("effect")) == len(VECTORS) == 30
     result = runner.ConformanceRunner(runner.ReferenceValidator()).run_all("effect")
-    assert (result.total, result.passed, result.failed, result.skipped) == (27, 27, 0, 0)
+    assert (result.total, result.passed, result.failed, result.skipped) == (30, 30, 0, 0)
 
     class MissingImplementation:
         pass
 
     refused = runner.ConformanceRunner(MissingImplementation()).run_all("effect")
-    assert (refused.failed, refused.skipped) == (27, 0)
+    assert (refused.failed, refused.skipped) == (30, 0)
 
 
 def test_identity_requires_canonical_json_and_explicit_nonempty_namespace():
@@ -128,3 +128,19 @@ def test_identity_requires_canonical_json_and_explicit_nonempty_namespace():
     for value in ["", None, "  ", True]:
         with pytest.raises(EffectError):
             effect_identity({**base, "namespace": value})
+
+
+def test_wire_effect_identity_retains_large_integers_and_refuses_lossy_spellings():
+    from actenon_protocol import parse_strict
+
+    first = _descriptor("integer_above_js_safe_range")
+    second = _descriptor("adjacent_integer_above_js_safe_range")
+    assert effect_identity(parse_strict(json.dumps(first))) != effect_identity(
+        parse_strict(json.dumps(second))
+    )
+    wire = json.dumps(first)
+    for number in ["0.9999999999999999999", "1.0", "1e0"]:
+        with pytest.raises(CanonicalisationError):
+            parse_strict(wire.replace("9007199254740992", number))
+    with pytest.raises(CanonicalisationError):
+        parse_strict(wire.replace('"amount_minor":', '"amount_minor": 1, "amount_minor":'))

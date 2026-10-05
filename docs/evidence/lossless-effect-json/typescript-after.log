@@ -1,0 +1,135 @@
+bun test v1.3.14 (0d9b296a)
+
+tests/conformance.test.ts:
+(pass) identifiers > accepts canonical prefixes [197.69ms]
+(pass) identifiers > accepts 16-hex-char identifiers (backward compat) [4.73ms]
+(pass) identifiers > accepts alias prefixes [0.13ms]
+(pass) identifiers > normalises aliases to canonical [0.15ms]
+(pass) identifiers > rejects forbidden prefixes [0.08ms]
+(pass) identifiers > rejects short hex [0.06ms]
+(pass) identifiers > rejects uppercase hex [0.08ms]
+(pass) identifiers > rejects non-string [0.03ms]
+(pass) canonicalisation > sorts object keys by UTF-8 byte order [17.68ms]
+(pass) canonicalisation > handles nested objects [0.24ms]
+(pass) canonicalisation > handles arrays in order [0.04ms]
+(pass) canonicalisation > rejects floats [13.58ms]
+(pass) canonicalisation > handles null, true, false [2.83ms]
+(pass) canonicalisation > does not \u-escape non-ASCII [0.14ms]
+(pass) canonicalisation > escapes control characters [0.05ms]
+(pass) canonicalisation > handles integers of any size (BigInt for >2^53) [0.35ms]
+(pass) canonicalisation > produces identical bytes to Python reference (canonical vector) [0.22ms]
+(pass) canonicalisation > sorts keys by UTF-8 bytes, not UTF-16 code units [0.48ms]
+(pass) canonicalisation > rejects unpaired surrogates in values and keys [14.93ms]
+(pass) canonicalisation > accepts properly paired surrogates [0.09ms]
+(pass) canonicalisation > rejects Number integers outside the safe range (use BigInt) [0.47ms]
+(pass) canonicalisation > rejects values that are not JSON types instead of serialising them as {} [547.70ms]
+(pass) canonicalisation > rejects sparse arrays instead of emitting invalid JSON [0.24ms]
+(pass) canonicalisation > accepts plain and null-prototype objects [0.25ms]
+(pass) refusal codes > disclosed_code for SIGNATURE_INVALID under PUBLIC is PROOF_INVALID [0.21ms]
+(pass) refusal codes > disclosed_code for PROOF_EXPIRED is PROOF_EXPIRED (safe to disclose) [0.09ms]
+(pass) refusal codes > disclosed_code for REPLAY_DETECTED is REPLAY_DETECTED (safe to disclose) [0.03ms]
+(pass) refusal codes > mirrors the compiled catalogue (codes, disclosure, retryability, aliases) [25.20ms]
+(pass) refusal codes > unknown codes named like Object.prototype members are unknown, not inherited [3.03ms]
+(pass) capability provenance > does not widen an empty or wildcard scope [6.54ms]
+(pass) capability provenance > token length is not acceptance [0.53ms]
+(pass) capability provenance > authority extension names the grant [0.84ms]
+(pass) capability provenance > capability mismatch resolves to itself [0.15ms]
+(pass) execution modes > both modes are defined [0.27ms]
+
+tests/effects.test.ts:
+(pass) ACTENON-EFFECT-1 shared corpus > exact_changed_namespace.v1.json [551.04ms]
+(pass) ACTENON-EFFECT-1 shared corpus > ambiguous_partial.v1.json [1.38ms]
+(pass) ACTENON-EFFECT-1 shared corpus > exact_changed_target.v1.json [1.04ms]
+(pass) ACTENON-EFFECT-1 shared corpus > exact_reordered_parameters.v1.json [6.25ms]
+(pass) ACTENON-EFFECT-1 shared corpus > exact_refund.v1.json [0.58ms]
+(pass) ACTENON-EFFECT-1 shared corpus > semantic_distinct_refund.v1.json [1.28ms]
+(pass) ACTENON-EFFECT-1 shared corpus > reference_valid.v1.json [0.02ms]
+(pass) ACTENON-EFFECT-1 shared corpus > ambiguous_lost_response.v1.json [0.38ms]
+(pass) ACTENON-EFFECT-1 shared corpus > negative_arbitrary_precision_integer.v1.json [0.38ms]
+(pass) ACTENON-EFFECT-1 shared corpus > committed_observed.v1.json [0.01ms]
+(pass) ACTENON-EFFECT-1 shared corpus > adjacent_integer_above_js_safe_range.v1.json [0.18ms]
+(pass) ACTENON-EFFECT-1 shared corpus > exact_null_is_present.v1.json [0.16ms]
+(pass) ACTENON-EFFECT-1 shared corpus > integer_above_js_safe_range.v1.json [0.21ms]
+(pass) ACTENON-EFFECT-1 shared corpus > not_executed_confirmed.v1.json
+(pass) ACTENON-EFFECT-1 shared corpus > exact_changed_amount.v1.json [12.20ms]
+(pass) ACTENON-EFFECT-1 shared corpus > semantic_refund.v1.json [0.35ms]
+(pass) ACTENON-EFFECT-1 shared corpus > fractional_parameter.v1.json [2.42ms]
+(pass) ACTENON-EFFECT-1 shared corpus > failed_is_not_an_effect_outcome.v1.json [0.11ms]
+(pass) ACTENON-EFFECT-1 shared corpus > committed_unobserved.v1.json [0.05ms]
+(pass) ACTENON-EFFECT-1 shared corpus > blank_action.v1.json [0.29ms]
+(pass) ACTENON-EFFECT-1 shared corpus > empty_namespace.v1.json [0.17ms]
+(pass) ACTENON-EFFECT-1 shared corpus > agent_nonce_field.v1.json [0.17ms]
+(pass) ACTENON-EFFECT-1 shared corpus > unknown_profile.v1.json [0.14ms]
+(pass) ACTENON-EFFECT-1 shared corpus > empty_semantic_key.v1.json [0.12ms]
+(pass) ACTENON-EFFECT-1 shared corpus > reference_unknown_profile.v1.json
+(pass) ACTENON-EFFECT-1 shared corpus > not_executed_unknown.v1.json [0.01ms]
+(pass) ACTENON-EFFECT-1 shared corpus > reference_no_owner.v1.json
+(pass) ACTENON-EFFECT-1 shared corpus > wildcard_action.v1.json [0.10ms]
+(pass) ACTENON-EFFECT-1 shared corpus > wildcard_target.v1.json [0.13ms]
+(pass) ACTENON-EFFECT-1 shared corpus > ambiguous_false.v1.json [0.01ms]
+(pass) execution_occurred is never coerced [0.23ms]
+
+tests/strict-json.test.ts:
+(pass) packaged parser copies are byte-identical to the source of truth [10.65ms]
+(pass) protocol-types > retains every digit: 9007199254740992 [10.57ms]
+(pass) protocol-types > retains every digit: 9007199254740993 [0.07ms]
+(pass) protocol-types > retains every digit: -9007199254740993 [0.02ms]
+(pass) protocol-types > retains every digit: 123456789012345678901234567890 [0.04ms]
+(pass) protocol-types > safe integer representation remains number [0.27ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":0.9999999999999999999} [0.12ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":1.0} [0.02ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":1e0}
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":1,"\u006e":2} [0.08ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"a":[{"x":1,"x":2}]} [0.04ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":01} [0.02ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":-01}
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":+1}
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":1,}
+(pass) protocol-types > refuses malformed or lossy wire input: [1,] [0.22ms]
+(pass) protocol-types > refuses malformed or lossy wire input: null false [0.05ms]
+(pass) protocol-types > refuses malformed or lossy wire input: NaN
+(pass) protocol-types > refuses malformed or lossy wire input: Infinity [0.02ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"n":}
+(pass) protocol-types > refuses malformed or lossy wire input: {"n" 1}
+(pass) protocol-types > refuses malformed or lossy wire input: "\ud800" [0.07ms]
+(pass) protocol-types > refuses malformed or lossy wire input: {"\ud800":1} [0.02ms]
+(pass) protocol-types > refuses malformed or lossy wire input: "unterminated [0.01ms]
+(pass) protocol-types > refuses malformed or lossy wire input: "raw
+control" [0.04ms]
+(pass) protocol-types > refuses malformed or lossy wire input: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]] [0.03ms]
+(pass) protocol-types > nested objects, escaped keys and scalar strings survive [3.45ms]
+(pass) protocol-types > canonical size limit applies [29.78ms]
+(pass) protocol runtime > retains every digit: 9007199254740992 [9.15ms]
+(pass) protocol runtime > retains every digit: 9007199254740993 [0.11ms]
+(pass) protocol runtime > retains every digit: -9007199254740993 [0.03ms]
+(pass) protocol runtime > retains every digit: 123456789012345678901234567890 [0.02ms]
+(pass) protocol runtime > safe integer representation remains number [0.03ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":0.9999999999999999999} [0.10ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":1.0} [0.04ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":1e0} [0.01ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":1,"\u006e":2} [0.02ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"a":[{"x":1,"x":2}]} [0.02ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":01}
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":-01}
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":+1}
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":1,}
+(pass) protocol runtime > refuses malformed or lossy wire input: [1,] [0.02ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: null false [0.22ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: NaN [27.81ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: Infinity [0.07ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n":} [0.03ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"n" 1} [0.01ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: "\ud800" [0.03ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: {"\ud800":1} [0.04ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: "unterminated
+(pass) protocol runtime > refuses malformed or lossy wire input: "raw
+control" [149.41ms]
+(pass) protocol runtime > refuses malformed or lossy wire input: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]] [0.09ms]
+(pass) protocol runtime > nested objects, escaped keys and scalar strings survive [92.89ms]
+(pass) protocol runtime > canonical size limit applies [49.92ms]
+(pass) effect identities retain adjacent large integer differences [3.73ms]
+
+ 121 pass
+ 0 fail
+ 388 expect() calls
+Ran 121 tests across 3 files. [9.48s]

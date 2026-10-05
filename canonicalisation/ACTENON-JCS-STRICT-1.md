@@ -86,6 +86,21 @@ Integers are serialised as their decimal string representation:
 
 **Examples:** `0` → `"0"`, `42` → `"42"`, `-1` → `"-1"`, `123456789012345678901234567890` → `"123456789012345678901234567890"`.
 
+Wire parsers MUST retain integer digits before any floating-point conversion.
+The reference APIs are Python `parse_strict(text)` and TypeScript
+`parseStrict(text)`. TypeScript returns safe integer literals as `number` and
+larger literals as `bigint`; this implements the existing arbitrary-precision
+profile without changing canonical bytes. Both parsers reject duplicate decoded
+members, float/exponent literals, malformed JSON and canonical depth/Unicode/size
+violations. Use `canonicalizeJson`/`canonicalize_json` to encode the parsed value;
+ordinary `JSON.stringify` does not support `bigint`.
+
+`JSON.parse` alone is unsuitable before security-relevant hashing or execution:
+it can round `9007199254740993` to `9007199254740992`, turn
+`0.9999999999999999999` into integer `1`, and discard duplicate members. An
+in-memory canonicalizer cannot recover the original wire spelling. The protected
+edge must execute the same losslessly parsed value it verifies.
+
 ### 4.6 Negative integers
 
 Negative integers use a leading `-` followed by the absolute value's decimal representation, with no leading zeros.

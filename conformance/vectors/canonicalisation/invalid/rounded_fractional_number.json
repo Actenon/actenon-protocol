@@ -1,0 +1,6 @@
+{
+  "name": "rounded_fractional_number",
+  "description": "Raw JSON must be refused before parsing can lose security-relevant information.",
+  "input_json": "{\"amount\":0.9999999999999999999}",
+  "expected_error": "CanonicalisationError"
+}

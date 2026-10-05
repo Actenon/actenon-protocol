@@ -51,7 +51,7 @@ jobs:
         # the JSON ships in the wheel, the YAML is the human-editable source.
         run: python scripts/compile_yaml_to_json.py --check
 
-      - name: Run conformance suite (156 vectors)
+      - name: Run conformance suite (161 vectors)
         run: python -m pytest conformance/python/ -v
 
   lint:
@@ -101,6 +101,10 @@ jobs:
         working-directory: typescript
         run: bun run typecheck
 
+      - name: Canonicalisation wire corpus
+        working-directory: typescript
+        run: bun run tests/conformance.ts
+
       - name: TS tests
         working-directory: typescript
         run: bun test
@@ -118,7 +122,16 @@ jobs:
         # The package used to ship only .ts source as main, which Node refuses
         # (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING).
         working-directory: typescript
-        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol-types canonicalizeJson canonicalizeBytes CanonicalisationError RefusalCode refusalToDisclosedCode resolveAlias PROTOCOL_VERSION isValidIdentifier ExecutionMode ExecutionOutcome effectIdentity validateEffectEvidence EFFECT_PROFILE
+        run: bash ../scripts/smoke-npm-pack.sh . @actenon/protocol-types canonicalizeJson canonicalizeBytes parseStrict CanonicalisationError RefusalCode refusalToDisclosedCode resolveAlias PROTOCOL_VERSION isValidIdentifier ExecutionMode ExecutionOutcome effectIdentity validateEffectEvidence EFFECT_PROFILE
+
+      - name: Build runtime candidate for installed strict JSON parity
+        working-directory: typescript-runtime
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
+      - name: Verify strict parsing and effect identities from installed npm tarballs
+        run: bash scripts/smoke-strict-json-pack.sh
 
   typescript-runtime:
     name: TypeScript runtime (@actenon/protocol)
