@@ -11,7 +11,7 @@
 
 export { PROTOCOL_VERSION, CANONICALISATION_PROFILE, LEGACY_CANONICALISATION_PROFILE, ACCEPTED_CANONICALISATION_PROFILES } from "./version.js";
 export { isValidIdentifier, generateIdentifier, normaliseIdentifier, PREFIXES, ALIASES } from "./identifiers.js";
-export { canonicalizeJson, canonicalizeBytes, CanonicalisationError } from "./canonicalisation.js";
+export { canonicalizeJson, canonicalizeBytes, parseStrict, CanonicalisationError } from "./canonicalisation.js";
 export { RefusalCode, DisclosurePolicy, resolveAlias, refusalToDisclosedCode, refusalToInternalCode, refusalToRetryable, PUBLIC_SAFE_CODES, DETAILED_CODES } from "./refusal-codes.js";
 export {
   GLOB_CHARS,

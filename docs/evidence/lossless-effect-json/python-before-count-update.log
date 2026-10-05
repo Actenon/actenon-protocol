@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/ross/Documents/Codex/2026-10-03/referenced-chatgpt-conversation-this-is-an/work/actenon-protocol-effects
+configfile: pyproject.toml
+collected 367 items
+
+conformance/python/conformance_suite.py .......................sssssssss [  8%]
+ssssssss.s..........ss.ss............................................... [ 28%]
+........................................................................ [ 47%]
+........................................................................ [ 67%]
+.........................F...............................                [ 83%]
+conformance/python/test_capability_provenance.py .......                 [ 85%]
+conformance/python/test_effects.py ..................................... [ 95%]
+.....                                                                    [ 96%]
+conformance/python/test_package_schemas.py .............                 [100%]
+
+=================================== FAILURES ===================================
+_______________ TestVectorHashLock.test_lock_covers_every_vector _______________
+conformance/python/conformance_suite.py:1315: in test_lock_covers_every_vector
+    assert len(entries) == 156
+E   AssertionError: assert 161 == 156
+E    +  where 161 = len({'canonicalisation/invalid/deeply_nested_exceeds_limit.json': 'acfe1c6f825f5417a3fb0708fc804329e5611562e5c19b75b8a6626...onicalisation/invalid/float_deep_nested.json': 'b9d4d23435fae6155b6e27c9724e080eb1fe36b665297f33a3ba2f51870f6605', ...})
+- generated xml file: /Users/ross/Documents/Codex/2026-10-03/referenced-chatgpt-conversation-this-is-an/work/actenon-protocol-effects/docs/evidence/lossless-effect-json/python-after.xml -
+=========================== short test summary info ============================
+FAILED conformance/python/conformance_suite.py::TestVectorHashLock::test_lock_covers_every_vector
+================== 1 failed, 344 passed, 22 skipped in 3.23s ===================

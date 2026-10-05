@@ -211,18 +211,8 @@ class ReferenceValidator:
             return False, str(exc)
 
     def parse_json(self, text: str) -> Any:
-        def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict:
-            obj: dict = {}
-            for key, value in pairs:
-                if key in obj:
-                    raise ValueError(f"duplicate object key {key!r}")
-                obj[key] = value
-            return obj
-
-        def reject_constant(name: str) -> Any:
-            raise ValueError(f"{name} is not valid JSON")
-
-        return json.loads(text, object_pairs_hook=reject_duplicates, parse_constant=reject_constant)
+        from actenon_protocol.canonicalisation import parse_strict
+        return parse_strict(text)
 
     def language_specific_input(self, vector_name: str) -> Any:
         return {

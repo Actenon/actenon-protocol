@@ -1,3 +1,5 @@
+import { parseStrictJson } from "./strict-json.js";
+
 /**
  * ACTENON-JCS-STRICT-1 canonicalisation — runtime implementation.
  *
@@ -142,8 +144,8 @@ function canonicalizeJsonImpl(value: unknown): string {
     // to 2^53 - 1. Beyond that toString() prints a rounded value
     // (2**60 -> "1152921504606847000") or exponent form (1e21 -> "1e+21"),
     // neither of which is the integer's canonical decimal. Callers with
-    // large integers MUST pass them as BigInt (parseStrict enforces the
-    // same bound on JSON text).
+    // large integers MUST pass them as BigInt (parseStrict preserves
+    // integer values losslessly from JSON text).
     if (!Number.isSafeInteger(value)) {
       throw new CanonicalisationError(
         `integer ${value} is outside the safe integer range ±(2^53 − 1); pass it as a BigInt`
@@ -234,205 +236,13 @@ export function canonicalize(value: unknown): Uint8Array {
   return canonicalizeBytes(value);
 }
 
-/**
- * Parse a JSON string with ACTENON-JCS-STRICT-1 lexical rules.
- *
- * JavaScript's JSON.parse has two problems for strict canonicalisation:
- *
- *  1. It loses the float/integer distinction. JSON.parse("0.0") produces
- *     the number 0, and Number.isInteger(0) is true — so the canonicaliser
- *     can't reject 0.0 as a float. But the raw JSON text "0.0" clearly
- *     contains a float literal (it has a decimal point).
- *
- *  2. It truncates integers > 2^53-1. JSON.parse("9007199254740993")
- *     produces 9007199254740992 (the nearest representable double). The
- *     canonicaliser sees the wrong value and produces wrong bytes.
- *
- * parseStrict solves both by scanning the RAW TEXT before JSON.parse:
- *   - Any number literal containing '.', 'e', or 'E' → float → reject
- *   - Any integer literal outside ±(2^53 − 1) → unsafe integer → reject
- *
- * The scan uses a proper JSON tokenizer that understands string
- * boundaries — a naive regex would match digits inside string values
- * like {"note":"costs 50.0 dollars"}, which must be ACCEPTED.
- *
- * After the scan, JSON.parse is called on the (validated) text. The
- * parsed value is returned as-is — it's now guaranteed to contain only
- * safe integers, strings, booleans, null, arrays, and objects.
- *
- * Throws CanonicalisationError on float literals or unsafe integers.
- * Throws SyntaxError (from JSON.parse) on malformed JSON.
+
+/** Parse raw JSON without rounding integers or discarding duplicate members.
+ * Integers outside Number's exact range are returned as BigInt. The canonical
+ * profile's depth, Unicode and output limits also apply to the parsed value.
  */
 export function parseStrict(text: string): unknown {
-  scanStrict(text);
-  return JSON.parse(text);
-}
-
-/**
- * Scan raw JSON text for violations of ACTENON-JCS-STRICT-1.
- *
- * This is a lexical pre-check that runs BEFORE JSON.parse. It walks the
- * text character by character, tracking:
- *   - String boundaries (so digits inside strings are not mistaken for
- *     number literals)
- *   - Object nesting (a stack of Sets, one per object level, for
- *     duplicate-key detection)
- *
- * For each number literal found:
- *   - If it contains '.', 'e', or 'E' → float → reject
- *   - If it's an integer outside ±(2^53 − 1) → unsafe → reject
- *
- * For each object key found (a string followed by ':'):
- *   - If the key has already been seen at the current object level →
- *     duplicate key → reject
- *
- * The duplicate-key check is the parser's responsibility per
- * ACTENON-JCS-STRICT-1 §4.12: "Duplicate-key detection is the
- * responsibility of the JSON parser, not the canonicaliser."
- * parseStrict IS the parser. JavaScript's JSON.parse uses last-wins
- * (silently discarding earlier values), so without this check, a
- * signed payload like {"amount":1,"amount":1000} would be accepted
- * as {"amount":1000} — a classic signature-confusion vector where
- * the signer sees one value and the verifier sees another from
- * identical bytes.
- */
-function scanStrict(text: string): void {
-  const len = text.length;
-  let i = 0;
-
-  // Stack of Sets for duplicate-key detection. One Set per object nesting
-  // level. Arrays don't have keys, so they don't push a Set.
-  const keyStack: Set<string>[] = [];
-
-  while (i < len) {
-    const ch = text[i];
-
-    // String: read the full string inline, then check if it's an object key
-    if (ch === '"') {
-      i++; // skip opening quote
-      let strContent = "";
-      while (i < len) {
-        if (text[i] === "\\") {
-          // Keep the escape sequence as-is here; the key is decoded
-          // below before the duplicate comparison.
-          strContent += text[i] + text[i + 1];
-          i += 2;
-          continue;
-        }
-        if (text[i] === '"') {
-          break;
-        }
-        strContent += text[i];
-        i++;
-      }
-      i++; // skip closing quote
-
-      // Peek ahead: skip whitespace, check if next char is ':'
-      let j = i;
-      while (j < len && (text[j] === " " || text[j] === "\t" || text[j] === "\n" || text[j] === "\r")) {
-        j++;
-      }
-      if (j < len && text[j] === ":") {
-        // This string is an object key. Check for duplicates at the
-        // current object level.
-        if (keyStack.length > 0) {
-          // Compare DECODED keys. JSON.parse decodes escapes before it
-          // applies last-wins, so "amount" and "amount" (or "/" and
-          // "\/") name the same member. Comparing the raw escaped text
-          // would let {"amount":1,"amount":1000} through as
-          // {"amount":1000}. A malformed key throws SyntaxError here,
-          // exactly as the JSON.parse call below would.
-          const key = JSON.parse(`"${strContent}"`) as string;
-          const currentKeys = keyStack[keyStack.length - 1];
-          if (currentKeys.has(key)) {
-            throw new CanonicalisationError(
-              `duplicate key ${JSON.stringify(key)} in object — ` +
-              `duplicate keys are prohibited by ACTENON-JCS-STRICT-1 §4.12`
-            );
-          }
-          currentKeys.add(key);
-        }
-      }
-      continue;
-    }
-
-    // Structural characters
-    if (ch === "{") {
-      keyStack.push(new Set());
-      i++;
-      continue;
-    }
-    if (ch === "}") {
-      keyStack.pop();
-      i++;
-      continue;
-    }
-    if (ch === "[" || ch === "]" || ch === ":" || ch === ",") {
-      i++;
-      continue;
-    }
-
-    // Skip whitespace
-    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
-      i++;
-      continue;
-    }
-
-    // Skip literals: true, false, null
-    if (ch === "t" && text.slice(i, i + 4) === "true") {
-      i += 4;
-      continue;
-    }
-    if (ch === "f" && text.slice(i, i + 5) === "false") {
-      i += 5;
-      continue;
-    }
-    if (ch === "n" && text.slice(i, i + 4) === "null") {
-      i += 4;
-      continue;
-    }
-
-    // Number literal: starts with digit or minus
-    if (ch === "-" || (ch >= "0" && ch <= "9")) {
-      const start = i;
-      if (ch === "-") i++;
-      while (i < len && text[i] >= "0" && text[i] <= "9") i++;
-
-      let isFloat = false;
-      if (i < len && text[i] === ".") {
-        isFloat = true;
-        i++;
-        while (i < len && text[i] >= "0" && text[i] <= "9") i++;
-      }
-      if (i < len && (text[i] === "e" || text[i] === "E")) {
-        isFloat = true;
-        i++;
-        if (i < len && (text[i] === "+" || text[i] === "-")) i++;
-        while (i < len && text[i] >= "0" && text[i] <= "9") i++;
-      }
-
-      const literal = text.slice(start, i);
-
-      if (isFloat) {
-        throw new CanonicalisationError(
-          "floating-point values are not supported in ACTENON-JCS-STRICT-1; " +
-          "use integer cents or string-encoded decimals instead"
-        );
-      }
-
-      // Check integer range: must be within ±(2^53 − 1) = ±9007199254740991.
-      const bigVal = BigInt(literal);
-      const MAX_SAFE = BigInt(9007199254740991); // 2^53 - 1
-      if (bigVal > MAX_SAFE || bigVal < -MAX_SAFE) {
-        throw new CanonicalisationError(
-          `integer ${literal} exceeds the safe integer range ±(2^53 − 1) ` +
-          `for ACTENON-JCS-STRICT-1; pass as BigInt or encode as a string`
-        );
-      }
-      continue;
-    }
-
-    // Unexpected character — let JSON.parse produce the error
-    i++;
-  }
+  const parsed = parseStrictJson(text, CanonicalisationError, MAX_JSON_DEPTH);
+  canonicalizeBytes(parsed);
+  return parsed;
 }

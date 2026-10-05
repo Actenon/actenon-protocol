@@ -156,3 +156,39 @@ def assert_accepted_profile(label: str) -> None:
             f"canonicalisation profile {label!r} is not accepted. "
             f"Accepted profiles: {sorted(ACCEPTED_CANONICALISATION_PROFILES)}"
         )
+
+
+def parse_strict(text: str) -> Any:
+    """Parse wire JSON without losing duplicate members or numeric precision.
+
+    Arbitrary-precision integer literals retain their exact value. Float and
+    exponent literals, duplicate decoded keys, malformed JSON, and canonical
+    depth/Unicode/output limit violations are refused before a caller hashes
+    or acts on the result. Parsing an already-decoded object cannot recover
+    lexical information lost by an unsafe parser.
+    """
+    if not isinstance(text, str):
+        raise CanonicalisationError("JSON input must be a string")
+
+    def object_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise CanonicalisationError(f"duplicate object key {key!r}")
+            result[key] = value
+        return result
+
+    def reject_number(value: str) -> Any:
+        raise CanonicalisationError(f"unsupported numeric literal {value!r}")
+
+    try:
+        value = json.loads(
+            text,
+            object_pairs_hook=object_members,
+            parse_float=reject_number,
+            parse_constant=reject_number,
+        )
+    except (ValueError, RecursionError) as exc:
+        raise CanonicalisationError(f"invalid strict JSON: {exc}") from exc
+    canonicalize_bytes(value)
+    return value

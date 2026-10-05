@@ -1,0 +1,6 @@
+{
+  "name": "escaped_duplicate_member",
+  "description": "Raw JSON must be refused before parsing can lose security-relevant information.",
+  "input_json": "{\"amount\":1,\"\\u0061mount\":2}",
+  "expected_error": "CanonicalisationError"
+}

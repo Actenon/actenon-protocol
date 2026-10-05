@@ -1,3 +1,5 @@
+import { parseStrictJson } from "./strict-json.js";
+
 /**
  * ACTENON-JCS-STRICT-1 canonicalisation reference implementation.
  *
@@ -148,4 +150,14 @@ export function canonicalizeBytes(
     );
   }
   return bytes;
+}
+
+/** Parse raw JSON without rounding integers or discarding duplicate members.
+ * Integers outside Number's exact range are returned as BigInt. The canonical
+ * profile's depth, Unicode and output limits also apply to the parsed value.
+ */
+export function parseStrict(text: string): unknown {
+  const parsed = parseStrictJson(text, CanonicalisationError, MAX_JSON_DEPTH);
+  canonicalizeBytes(parsed);
+  return parsed;
 }

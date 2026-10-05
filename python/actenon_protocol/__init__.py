@@ -21,6 +21,7 @@ from actenon_protocol.canonicalisation import (
     CanonicalisationError,
     canonicalize_bytes,
     canonicalize_json,
+    parse_strict,
 )
 from actenon_protocol.capabilities import (
     GLOB_CHARS,
@@ -102,6 +103,7 @@ __all__ = [
     "FORBIDDEN_PREFIXES",
     # Canonicalisation
     "canonicalize_json",
+    "parse_strict",
     "canonicalize_bytes",
     "CanonicalisationError",
     "MAX_CANONICAL_OUTPUT_BYTES",

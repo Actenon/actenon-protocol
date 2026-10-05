@@ -61,3 +61,12 @@ This profile guarantees neither exactly-once remote execution nor correctness of
 ## Conformance and deployment status
 
 JSON Schemas, Python models/helpers, TypeScript helpers and locked vectors define descriptor hashing and evidence consistency. The standalone runner executes the new vectors; a missing implementation is a failure, never a pass/skip. Full effect protection also requires executor/store attack tests for threads, processes, shared hosts, crashes, proof/approval replay, mutated action/target/parameters and lost responses. Schema conformance alone is insufficient. Kernel, Permit, SDKs and Airlock must explicitly integrate and test the profile before claiming protected effect execution.
+
+## Lossless wire input
+
+Effect descriptors use the complete ACTENON-JCS-STRICT-1 integer domain. Callers
+reading JSON use Python `parse_strict` or TypeScript `parseStrict` before calling
+`effect_identity`/`effectIdentity`; see the canonicalisation profile §4.5. The
+same parsed parameters must reach the protected executor. Ordinary `JSON.parse`
+is not a verifier for raw descriptors: rounding and duplicate-member removal
+can change the intended consequence before the identity helper receives it.

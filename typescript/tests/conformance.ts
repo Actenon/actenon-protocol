@@ -7,7 +7,7 @@
  * bytes as the Python reference for all normative vectors.
  */
 
-import { canonicalizeJson, CanonicalisationError } from "../src/canonicalisation.js";
+import { canonicalizeJson, canonicalizeBytes, parseStrict, CanonicalisationError } from "../src/canonicalisation.js";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
@@ -54,35 +54,10 @@ function run(): number {
     const files = readdirSync(validDir).filter((f) => f.endsWith(".json"));
     for (const file of files) {
       const content = readFileSync(join(validDir, file), "utf-8");
-      const vector = JSON.parse(content) as ValidVector;
+      const vector = parseStrict(content) as ValidVector;
 
       if (vector.input === undefined || vector.expected_canonical === undefined) {
         console.log(`  SKIP  ${vector.name}`);
-        skipped++;
-        continue;
-      }
-
-      // BigInt values can't be represented in JSON, so we need to handle
-      // large integers specially. The vectors use numbers within JSON.safe
-      // range (< 2^53). For larger values, JS Number loses precision —
-      // those vectors are expected to fail in JS and are skipped.
-      // Check if any numeric value in the input exceeds safe integer range.
-      function hasUnsafeIntegers(val: unknown): boolean {
-        if (typeof val === "number" && Number.isInteger(val) && !Number.isSafeInteger(val)) return true;
-        if (Array.isArray(val)) return val.some(hasUnsafeIntegers);
-        if (val !== null && typeof val === "object") {
-          return Object.values(val as Record<string, unknown>).some(hasUnsafeIntegers);
-        }
-        return false;
-      }
-      // Also check the expected_canonical for large integer values that
-      // would have been precision-lost during JSON.parse of the vector file itself.
-      function hasPrecisionLossInExpected(expected: string): boolean {
-        // Check for integers with 16+ digits in the expected canonical output
-        return /:\d{16,}/.test(expected) || /:-\d{16,}/.test(expected);
-      }
-      if (hasPrecisionLossInExpected(vector.expected_canonical)) {
-        console.log(`  SKIP  ${vector.name} (contains integers > 2^53 — JS Number precision loss)`);
         skipped++;
         continue;
       }
@@ -114,18 +89,8 @@ function run(): number {
       const vector = JSON.parse(content) as InvalidVector;
 
       if (vector.input_json !== undefined) {
-        // Skip vectors where JS JSON.parse loses the float/integer distinction.
-        // JS Number.isInteger(0.0) === true and Number.isInteger(1.5e10) === true
-        // because JS has a single Number type that stores both as IEEE 754 doubles.
-        const jsFloatAmbiguous = ["float_zero", "float_exponent"];
-        if (jsFloatAmbiguous.includes(vector.name)) {
-          console.log(`  SKIP  ${vector.name} (JS Number type cannot distinguish float from integer after JSON.parse)`);
-          skipped++;
-          continue;
-        }
-
         try {
-          const parsed = JSON.parse(vector.input_json);
+          const parsed = parseStrict(vector.input_json);
           try {
             canonicalizeJson(parsed);
             console.log(`  FAIL  ${vector.name}: expected error but got success`);
@@ -138,11 +103,22 @@ function run(): number {
               failed++;
             }
           }
-        } catch {
-          // NaN/Infinity aren't valid JSON — skip
-          skipped++;
+        } catch (e) {
+          if (e instanceof CanonicalisationError) passed++;
+          else { console.log(`  FAIL  ${vector.name}: ${e}`); failed++; }
+        }
+      } else if (vector.name === "duplicate_keys" || vector.name === "oversized_structure") {
+        try {
+          if (vector.name === "duplicate_keys") parseStrict('{"a":1,"a":2}');
+          else canonicalizeBytes("a".repeat(1048575));
+          console.log(`  FAIL  ${vector.name}: expected refusal`);
+          failed++;
+        } catch (e) {
+          if (e instanceof CanonicalisationError) passed++;
+          else { console.log(`  FAIL  ${vector.name}: ${e}`); failed++; }
         }
       } else {
+        console.log(`  SKIP  ${vector.name} (no JavaScript representation for native type)`);
         skipped++;
       }
     }

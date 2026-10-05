@@ -7,18 +7,12 @@
  * bytes as the Python reference for all normative vectors.
  *
  * Vectors with `input_json` are routed through `parseStrict` (lexical
- * pre-check for float/integer-range/duplicate-key violations) before
+ * rejection of float/duplicate-key violations and lossless integers) before
  * canonicalisation.
  *
  * Skip classification:
- *   - LEGITIMATE: the input cannot be expressed in JSON at all
- *     (NaN, Infinity, -Infinity) or is a language-specific type
- *     (bytes, set, non-string dict keys).
- *   - KNOWN DIVERGENCE: the vector is in valid/ but TypeScript rejects
- *     it because parseStrict enforces the ±(2^53 − 1) integer limit.
- *     This is a known cross-language divergence that requires a spec
- *     amendment (ACTENON-JCS-STRICT-2) to resolve. See PR #6 spec
- *     amendment comment for details. NOT a legitimate skip.
+ *   - LEGITIMATE: a language-specific type with no JavaScript representation
+ *     (bytes, set, non-string dict keys). Invalid wire spellings are tested.
  */
 
 import { canonicalizeJson, canonicalize, parseStrict, CanonicalisationError } from "../src/canonicalisation.js";
@@ -71,34 +65,11 @@ function run(): number {
     const files = readdirSync(validDir).filter((f) => f.endsWith(".json"));
     for (const file of files) {
       const content = readFileSync(join(validDir, file), "utf-8");
-      const vector = JSON.parse(content) as ValidVector;
+      const vector = parseStrict(content) as ValidVector;
 
       if (vector.input === undefined || vector.expected_canonical === undefined) {
         console.log(`  SKIP  ${vector.name} (no input or expected_canonical)`);
         skipped.push({ name: vector.name, reason: "no input/expected", classification: "LEGITIMATE" });
-        continue;
-      }
-
-      // Check if the expected_canonical contains integers > 2^53.
-      const hasLargeInt = /:\d{16,}/.test(vector.expected_canonical) ||
-                          /:-\d{16,}/.test(vector.expected_canonical);
-
-      if (hasLargeInt) {
-        // KNOWN DIVERGENCE: these vectors contain integers > 2^53-1.
-        // Python accepts them (arbitrary-precision int); parseStrict
-        // rejects them (JS Number can't represent them exactly).
-        // This is NOT a legitimate skip — it's a cross-language
-        // divergence that requires a spec amendment (ACTENON-JCS-STRICT-2)
-        // to resolve. The amendment would move these vectors from
-        // valid/ to invalid/ with an expected_error.
-        //
-        // See the spec amendment comment on PR #6 for details.
-        console.log(`  SKIP  ${vector.name} (KNOWN DIVERGENCE — integers > 2^53; pending ACTENON-JCS-STRICT-2 amendment)`);
-        skipped.push({
-          name: vector.name,
-          reason: "integers > 2^53 — Python accepts, TS rejects; pending spec amendment",
-          classification: "KNOWN DIVERGENCE",
-        });
         continue;
       }
 
@@ -180,23 +151,6 @@ function run(): number {
         // Genuinely language-specific — not a JSON type
         console.log(`  SKIP  ${vector.name} (no input_json — ${vector.note || "language-specific"})`);
         skipped.push({ name: vector.name, reason: "no input_json — language-specific", classification: "LEGITIMATE" });
-        continue;
-      }
-
-      // Has input_json — check if it's a valid JSON literal
-      const isNonJsonLiteral = vector.name === "float_nan" ||
-                                vector.name === "float_infinity" ||
-                                vector.name === "float_neg_infinity";
-
-      if (isNonJsonLiteral) {
-        try {
-          JSON.parse(vector.input_json);
-          console.log(`  FAIL  ${vector.name}: expected JSON.parse to reject ${vector.input_json}, but it parsed`);
-          failed++;
-        } catch {
-          console.log(`  SKIP  ${vector.name} (${vector.input_json} is not valid JSON — covered by TS adversarial tests)`);
-          skipped.push({ name: vector.name, reason: "not valid JSON — covered by TS tests", classification: "LEGITIMATE" });
-        }
         continue;
       }
 

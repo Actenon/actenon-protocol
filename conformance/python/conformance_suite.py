@@ -36,6 +36,7 @@ from actenon_protocol import (
     generate_identifier,
     is_valid_identifier,
     normalise_identifier,
+    parse_strict,
     refusal_to_disclosed_code,
     refusal_to_internal_code,
     refusal_to_retryable,
@@ -139,24 +140,8 @@ class TestCanonicalisationInvalid:
         input_json = vector.get("input_json")
         if input_json is None:
             pytest.skip(f"vector {vector_name!r} has no input_json field")
-        # Parse the JSON string. For NaN/Infinity, json.loads may fail
-        # (they're not valid JSON). In that case, we test the Python
-        # float directly.
-        try:
-            parsed = json.loads(input_json)
-        except json.JSONDecodeError:
-            # NaN, Infinity, -Infinity are not valid JSON. Test the
-            # Python float directly.
-            if input_json == "NaN":
-                parsed = float("nan")
-            elif input_json == "Infinity":
-                parsed = float("inf")
-            elif input_json == "-Infinity":
-                parsed = float("-inf")
-            else:
-                pytest.skip(f"vector {vector_name!r}: cannot parse {input_json!r}")
-        with pytest.raises((CanonicalisationError, TypeError)):
-            canonicalize_json(parsed)
+        with pytest.raises(CanonicalisationError):
+            canonicalize_json(parse_strict(input_json))
 
     def test_invalid_canonicalisation_python_only(self):
         """Python-specific invalid inputs that have no JSON form.
@@ -1327,7 +1312,7 @@ class TestVectorHashLock:
         entries = _vector_lock_module().read_lock(self.LOCK)
         on_disk = {p.relative_to(VECTORS_DIR).as_posix() for p in VECTORS_DIR.rglob("*.json")}
         assert set(entries) == on_disk
-        assert len(entries) == 156
+        assert len(entries) == 161
 
     def test_tampered_vector_detected(self, tmp_path):
         vectors, lock = self._copy(tmp_path)
@@ -1373,8 +1358,8 @@ class TestStandaloneRunner:
         runner = _runner_module()
         results = runner.ConformanceRunner(runner.ReferenceValidator()).run_all()
         assert results.failures == []
-        assert results.total == 156  # was double-counted as 258
-        assert results.passed == 156
+        assert results.total == 161  # one run per frozen vector
+        assert results.passed == 161
         assert results.skipped == 0
 
     def test_float_accepting_canonicaliser_is_not_compatible(self):
@@ -1422,7 +1407,7 @@ class TestStandaloneRunner:
         results = runner.ConformanceRunner(NoNativeInputs()).run_all("canonicalisation")
         assert results.failed == 0
         assert results.skipped == 3
-        assert results.passed == 34
+        assert results.passed == 36
 
 
 # ---------- 11. README claims about the Python package ----------
