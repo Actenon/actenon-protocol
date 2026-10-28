@@ -76,3 +76,18 @@ consumer CI that relied on the old transitive closure broke:
 package itself but a breaking change for consumers who never declared what
 they actually import. The fix direction is consumers declaring their real
 dependencies (extras), not the protocol restoring fat defaults.
+
+## FINDING: Coordinated ecosystem staging for `1.6.0` (2026-10-28 run)
+
+**Severity:** NOTE — intentional staged bump across the topological DAG.
+
+**What happened.** `pyproject.toml` and `typescript/package.json` were bumped
+to `1.6.0` while downstream repositories (`actenon-kernel`, `sdk-go`,
+`sdk-rust`, `actenon-permit`, and `actenon-airlock`) completed coordinated
+conformance verification against `ACTENON-JCS-STRICT-1` and `ACTENON-EFFECT-1`
+before cutting public registry tags (`v1.6.0`, `ts-types-v1.6.0`, `ts-v1.0.0`).
+
+**Resolution.** `scripts/check_version_coherence.py` now checks `FINDINGS.md`
+as specified by its ASSERT C diagnostic when a staged bump awaits coordinated
+publication tags.
+
