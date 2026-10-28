@@ -39,17 +39,17 @@ relevant assertion is skipped with a printed note.
 from __future__ import annotations
 
 import argparse
-from datetime import UTC, date, datetime, timedelta
 import json
-from pathlib import Path
 import re
 import subprocess
 import sys
 import time
-import tomllib
 import urllib.error
 import urllib.request
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
+import tomllib
 from packaging.version import InvalidVersion, Version
 
 RELEASE_TAG_RE = re.compile(r"^v(\d+\.\d+\.\d+)$")
@@ -71,9 +71,7 @@ def read_pyproject() -> tuple[str, Version]:
 
 
 def newest_release_tag() -> Version | None:
-    out = subprocess.run(
-        ["git", "tag", "-l"], check=True, capture_output=True, text=True
-    ).stdout
+    out = subprocess.run(["git", "tag", "-l"], check=True, capture_output=True, text=True).stdout
     versions = []
     for tag in out.split():
         m = RELEASE_TAG_RE.match(tag)
@@ -138,7 +136,7 @@ def validate_staged_candidate_waiver(
       - non-empty ``owner`` and ``reason``
       - ``expires_at`` (ISO-8601 ``YYYY-MM-DD``) in ``[today, today + 14 days]``
     """
-    ref_day = today or datetime.now(UTC).date()
+    ref_day = today or datetime.now(timezone.utc).date()
     try:
         text = Path(findings_path).read_text(encoding="utf-8")
     except OSError as exc:
@@ -185,9 +183,7 @@ def validate_staged_candidate_waiver(
             continue
 
         if entry.get("status") != "RELEASE_BLOCKED":
-            last_error = (
-                f"waiver status must be 'RELEASE_BLOCKED', got {entry.get('status')!r}"
-            )
+            last_error = f"waiver status must be 'RELEASE_BLOCKED', got {entry.get('status')!r}"
             continue
 
         owner = str(entry.get("owner") or "").strip()
@@ -204,7 +200,9 @@ def validate_staged_candidate_waiver(
             continue
 
         if expires_day < ref_day:
-            last_error = f"waiver expired on {expires_day.isoformat()} (today is {ref_day.isoformat()})"
+            last_error = (
+                f"waiver expired on {expires_day.isoformat()} (today is {ref_day.isoformat()})"
+            )
             continue
         if expires_day > ref_day + timedelta(days=MAX_WAIVER_DAYS):
             last_error = (
@@ -344,8 +342,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if failed:
         return 1
-    if args.mode in ("main", "release") and py_version != (tag_version if tag_version is not None else ZERO):
-        print(f"version coherence: CANDIDATE_STAGE_OK (release status: RELEASE_BLOCKED for {name}=={py_version})")
+    if args.mode in ("main", "release") and py_version != (
+        tag_version if tag_version is not None else ZERO
+    ):
+        print(
+            f"version coherence: CANDIDATE_STAGE_OK (release status: RELEASE_BLOCKED for {name}=={py_version})"
+        )
     else:
         print("version coherence: all assertions passed")
     return 0
