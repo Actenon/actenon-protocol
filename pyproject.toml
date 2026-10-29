@@ -62,6 +62,9 @@ dev = [
   "pytest>=8.0",
   "ruff>=0.8",
   "build>=1.2",
+  # scripts/check_version_coherence.py reads pyproject.toml; tomllib is
+  # stdlib only from Python 3.11, so 3.10 uses the tomli backport.
+  "tomli>=2.0; python_version < '3.11'",
 ]
 
 [project.urls]

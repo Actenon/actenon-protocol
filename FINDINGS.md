@@ -87,7 +87,19 @@ to `1.6.0` while downstream repositories (`actenon-kernel`, `sdk-go`,
 conformance verification against `ACTENON-JCS-STRICT-1` and `ACTENON-EFFECT-1`
 before cutting public registry tags (`v1.6.0`, `ts-types-v1.6.0`, `ts-v1.0.0`).
 
-**Resolution.** `scripts/check_version_coherence.py` now checks `FINDINGS.md`
-as specified by its ASSERT C diagnostic when a staged bump awaits coordinated
-publication tags.
+**Resolution.** `scripts/check_version_coherence.py` validates a bounded,
+structured `version-waiver` block for candidate-stage verification while
+reporting `RELEASE_BLOCKED` until `v1.6.0` is tagged and published to PyPI:
+
+```version-waiver
+{
+  "package": "actenon-protocol",
+  "staged_version": "1.6.0",
+  "published_version": "1.4.0",
+  "status": "RELEASE_BLOCKED",
+  "owner": "rossbuckley1990-hash",
+  "reason": "Staged candidate awaiting owner-authorised v1.6.0 tag and PyPI publication after cross-repo acceptance gates pass.",
+  "expires_at": "2026-11-08"
+}
+```
 
